@@ -1,0 +1,19 @@
+Liminal Controller, Copyright (c) 2026 PJ Gray, MIT.
+
+src/hardware.py, src/midi.py and the Canvas/font primitives in src/canvas.py
+are adapted from Stillwater, Copyright (c) 2026 PJ Gray, MIT, public baseline
+https://github.com/pj4533/stillwater at a61577df.
+No Stillwater music, private history or authored scene assets are included.
+
+Stillwater's direct display framing, XOR encoding and hardware control numbers
+are adapted from Federico Pepe's MIT-licensed Ableton Push Hack, revision
+ce412f54065b89ff6f341c588e35dccec7cc0bda, core/display/{usb,codec,geometry}.go
+and core/push3/{buttons,encoder}.go. Full license: LICENSE.push-hack.
+https://github.com/federico-pepe/ableton-push-hack
+
+The protocol text and golden messages are from the separately published
+Liminal push3 integration contract. Synthetic fixtures are newly authored and
+contain no footage, sample recordings, device configuration or private addresses.
+Original generated artwork provenance: docs/ARTWORK.md.
+Ableton and Push are their owners' trademarks. This independent application is
+not endorsed or supported by Ableton. No vendor software is distributed.

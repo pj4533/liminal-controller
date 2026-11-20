@@ -1,0 +1,13 @@
+.build/
+__pycache__/
+*.pyc
+.venv/
+settings.json
+ready.json
+*.log
+*.pid
+owner.json
+recovery/
+sessions/
+recordings/
+.env
