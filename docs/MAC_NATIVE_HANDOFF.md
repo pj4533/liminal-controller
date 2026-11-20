@@ -1,116 +1,92 @@
-# Native Mac build, test and qualification handoff
+# Host coding-session handoff: native acceptance and Push identity
 
-2026-11-20. This is a local handoff, not authorization to install, take over, boot,
-or start music on Push. No device has been touched. Connected playability remains
-unaccepted until the gates below pass. Python/Linux checks cannot replace them.
+Status on 2026-11-20: repairs are pushed, but the full playable-project objective
+is open. PJ already authorized installation, boot takeover and appropriate device
+checks. Remaining gates below require evidence, not another permission request.
 
-Paired sources: controller repository branch `main` (exact commit in the release
-`.build/manifest.json` under `source_commits.liminal-controller`), and Liminal
-branch `push3`, repair commit `378174bd98ae74429f0b4b577f5e7dddbcb83e8c`.
-The final repair report also records both full commits. Never merge to or change
-Liminal main for this validation. Work in dedicated clean clones/worktrees and
-preserve existing local edits, private samples and settings.
+Last verified installed controller: `c5917418ce4f0b785ab5077e395b09a72dc0f356`.
+Paired Liminal source: branch `push3`,
+`378174bd98ae74429f0b4b577f5e7dddbcb83e8c`. Latest controller `main` contains newer
+documentation; its rebuilt bundle has not been deployed. Before reboot, the
+controller ran with exclusive MIDI/USB ownership and advancing display transfers,
+disconnected from Liminal. Session and 104 recordings were preserved and Stillwater
+recovery was exercised. After controlled reboot, strict SSH rejected a changed
+host key. No new key was accepted; post-reboot identity/operation are **unknown**.
+Private identity and operational details are deliberately absent here.
 
-## Fail-visible native entry point
+## Native coding and qualification
 
-On the Mac, fetch/check out those paired commits. Read Liminal `AGENTS.md`,
-`docs/controller/README.md` and `docs/mix-verification.md` first. Xcode must support
-macOS 26 and an installed visionOS Simulator destination; resolve its pinned
-packages with Xcode. Preserve signing settings. If Secrets.swift is absent, copy
-Secrets.swift.template with its placeholder; generation is unnecessary. Do not
-copy private secrets into the controller repository or any report.
+Use the latest controller `main` and the exact Liminal `push3` commit above in
+dedicated clean checkouts. Preserve unrelated edits, signing, private assets and
+settings. **Keep Liminal main untouched; do not merge or deploy as part of this
+handoff.** Read Liminal `AGENTS.md`, `docs/controller/README.md` and
+`docs/mix-verification.md`. Resolve pinned packages with Xcode; use a placeholder
+Secrets.swift from its template if absent. No real key is needed for acceptance.
 
-From the controller checkout, set LIMINAL_CHECKOUT to the dedicated native
-checkout path, then run in bash (direct commands, no `|| true` or success trailer):
+After checkout, from the controller repository, run this in bash with the dedicated
+Liminal path set. Direct commands fail on errors; no `|| true` or success trailer:
 
 ```bash
 set -euo pipefail
 : "${LIMINAL_CHECKOUT:?Set the dedicated Liminal checkout path}"
+test "$(git branch --show-current)" = main
 test "$(git -C "$LIMINAL_CHECKOUT" branch --show-current)" = push3
 test "$(git -C "$LIMINAL_CHECKOUT" rev-parse HEAD)" = 378174bd98ae74429f0b4b577f5e7dddbcb83e8c
 python3 scripts/native-acceptance.py "$LIMINAL_CHECKOUT"
 ```
 
-This entry point stops with a nonzero status on the first failure and prints its
-success sentence only after **all three** commands succeed:
+The existing script builds macOS, runs all LiminalTests with parallel testing
+disabled, then builds visionOS Simulator. Pass `--vision-destination` with an
+installed destination if Apple Vision Pro differs. Expected: both BUILD SUCCEEDED,
+all tests pass, no unexpectedly skipped controller tests. Preserve full logs and
+xcresults outside git. Linux attempts lacked Xcode; **native builds/tests have
+not run**. A failed native step must retain a nonzero status.
 
-```bash
-xcodebuild -project Liminal.xcodeproj -scheme Liminal -destination 'platform=macOS' build
-xcodebuild -project Liminal.xcodeproj -scheme Liminal -destination 'platform=macOS' -parallel-testing-enabled NO -only-testing:LiminalTests test
-xcodebuild -project Liminal.xcodeproj -scheme Liminal -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build
-```
+Fix any compile/API/isolation/test failures on `push3`, rerun this entry point and
+record the new tested commit. Do not change signing to bypass build failures.
+The critical new regressions are captured real Python wire validation
+(`actualPythonControllerParameterFramesValidateNativeSchema`), actual-player drum
+supersession (`supersedingQueuedSwapOnlyReusesInactivePlayer`), full-bank 44.1/48/96
+kHz ownership/pressure retry
+(`coordinatorReleasesObsoleteBanksBeforeThirdProductionWindowAndRetriesPressure`),
+and chop trigger/stop fades between modulation ticks
+(`betweenModulationTicksStopPreservesEntireChokeFade` plus the extended bank test).
+The memory test's 45-second correctness allowance is not a preparation deadline.
 
-Use `--vision-destination` with an actually installed destination if different.
-Expected: both builds report BUILD SUCCEEDED; all LiminalTests pass, no failed
-or unexpectedly skipped controller tests. Preserve full logs and xcresult paths
-outside git. A successful shell command after a failed build is never acceptance.
-Linux attempts of these three xcodebuild operations exited 127 because Xcode is
-absent; none of the native tests has run here.
+Then qualify Debug **and** Release: default Auto PCM parity against baseline
+`25592874bc614e1b481f68ff3651e2fac5c728ad` without changing Liminal main; serialized
+mix captures/matrices per mix-verification.md; isolated-wet deadlines, source
+exclusion/effect routing, peaks, CPU and complete/retired/manual PCM at supported
+rates; at least ten minutes of transitions/rapid selections, held releases and
+route/lifecycle stress. Keep captures and unique derived-data folders outside git.
+Missing assets/footage and skipped captures are not passing evidence. Verify
+quantized drum/chop timing under load and measure pad-to-audio latency separately
+from network RTT. At 96 kHz next-bank prewarming can defer under 128 MiB; measure
+whether visible not-ready replacement meets the musical requirement.
 
-The critical new regressions expected in the native results are:
+Keep `LofiBus.isolatedPreparationQualified=false` until those measurements pass.
+Film/Space Manual remain unsupported. Build/test success alone does not establish
+native audio qualification or connected playability.
 
-- `ControllerProtocolTests.actualPythonControllerParameterFramesValidateNativeSchema`:
-  four fixture frames captured from actual Python Controller.event/Client TCP
-  output validate through ControllerWire.Command; the old array ID is rejected.
-- `ControllerDrumTests.supersedingQueuedSwapOnlyReusesInactivePlayer`: a loop
-  applies, two ready selections supersede queued swaps, and the actual audible
-  player's sample clock keeps advancing on its unchanged lane before the bar.
-- `ControllerInstrumentTests.coordinatorReleasesObsoleteBanksBeforeThirdProductionWindowAndRetriesPressure`:
-  full current/next windows across three lead registers at 44.1/48 kHz, bounded
-  single-bank admission at 96 kHz, independently pinned PCM, and retry after
-  pressure is released. No 8 kHz-only memory substitute. Native preparation is
-  intentionally given up to 45 seconds per ready state; this is a correctness
-  test, not proof of a musical preparation deadline.
-- `ControllerDialogueTests.betweenModulationTicksStopPreservesEntireChokeFade`
-  and the extended `announcedBanksActivateAtomicallyAndCannotExposeOldPadsWhenNextIsUnready`:
-  real manual player remains alive at 0/19 ms after stop/press between stale
-  modulation ticks; stop completes only after the 20 ms fade.
+## Restore trusted Push identity before further device checks
 
-## Audio and playability qualification still required
+1. Consult the private deployment checkpoint in the existing trusted local records.
+   Independently identify the physical Push through a trusted local console/host
+   inventory or another authenticated path; verify its identity and actual host
+   public key against that source. Diagnose address reassignment versus legitimate
+   key rotation. Never accept `ssh-keyscan` output as proof of identity, disable
+   strict checking, or blindly delete/replace the old pin.
+2. Only after the presented key matches independently verified evidence, reconcile
+   the specific stale pin while preserving the original checkpoint and audit
+   trail. Reconnect with strict checking. Until then, do not deploy/reinstall,
+   issue remote commands or claim post-reboot success.
+3. Verify actual boot target, one supervisor/app, exclusive MIDI/USB ownership,
+   stopped/disconnected startup, installed manifest hashes, session/recording
+   preservation and Stillwater/stock recovery evidence. Complete physical
+   display/pads/control/endpoint checks and, once native qualification permits,
+   connected Play/video/readiness, Stop, releases and reconnect stress. Follow
+   [INSTALL.md](INSTALL.md) and [VALIDATION.md](VALIDATION.md); preserve user data.
 
-Keep `LofiBus.isolatedPreparationQualified=false`. Passing the native build and
-regressions alone does not qualify isolated wet or make Film/Space Manual exist.
-At 96 kHz current+next can exceed 128 MiB: next prewarming is deferred and an
-actual replacement reports not-ready during preparation. Held notes can delay
-readiness until their immutable PCM releases. Measure this policy explicitly;
-do not advertise gap-free transitions or production-rate timing from static checks.
-
-1. Compare untouched default Auto PCM/levels against baseline Liminal main
-   `25592874bc614e1b481f68ff3651e2fac5c728ad`, using the same seeds, drum assets,
-   footage cache, route and captures. Run captures sequentially in separate
-   derived-data directories and output folders **outside** either repository.
-   Read all mix-verification prerequisites and existing capture-lock rules.
-2. Run serialized baseline and candidate mix matrices with private assets supplied
-   locally and a cached film reel. For each checkout, use a unique output root:
-
-   ```bash
-   set -euo pipefail
-   : "${QUALIFICATION_SCRATCH:?Set a writable path outside both repositories}"
-   DD="$QUALIFICATION_SCRATCH/dd" scripts/mix-matrix.sh --out "$QUALIFICATION_SCRATCH/matrix" --strict
-   ```
-
-   Check per-case strict failures, skips, source fingerprints, finite PCM, peaks,
-   routing, audible continuity and human listening. Do not count absent footage,
-   sample/drum assets or skipped captures as success. The matrix is one part of
-   qualification; it does not cover every manual controller interaction.
-3. In Debug **and** Release, profile isolated-wet preparation, existing phrase
-   deadlines, complete/retired/manual PCM ownership, peak RSS and CPU at 44.1,
-   48 and 96 kHz. Run at least ten minutes of changes, quick drum supersession,
-   chop choke timing, rapid windows/programs and held/stealing/releasing voices.
-   Prove independent manual/Auto exclusion and dry/wet/effect routing. Capture
-   drums on the source bar phase and chops on sixteenths under load. Any miss,
-   leak, clipped fade or unrecovered not-ready result keeps qualification closed.
-4. Exercise real protocol commands, normal Play/video gate, Stop, all-notes-off,
-   lease loss/reconnect, mode switches and route recovery against the rebuilt Mac.
-   Verify captured onset releases and current instrument/bank revision rejection.
-   Network RTT is not pad-to-audio latency; measure the latter separately.
-5. Only after native/audio gates and separate device authorization, use the
-   controller INSTALL/VALIDATION checklist for exclusive hardware ownership,
-   stopped/disconnected boot, controls/display/pads, private endpoint UI and
-   verified Stillwater/stock recovery with saved bytes and user data preserved.
-   Film/Space Manual remain unsupported. Do not enable Lo-Fi merely to obtain a
-   green UI: qualification evidence must precede any gate change.
-
-Return the exact tested commits, destinations/configurations, test counts,
-xcresult/log locations, capture/profiling results and failed/skipped checks to
-PJ's current session. Do not silently deploy or publish from this handoff.
+Return exact installed/tested/latest commits, build destinations/configurations,
+test counts, logs/xcresults, qualification results and unresolved checks to PJ's
+current coding session. This file is the handoff; it has not been sent elsewhere.

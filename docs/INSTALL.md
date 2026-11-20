@@ -2,7 +2,8 @@
 
 This independent application targets already-authorized Push3Standalone root
 access; it supplies no key, enrollment, firmware modification or vendor software.
-No hardware installation has been performed by the repository's local tests.
+Local tests alone do not establish hardware acceptance; see VALIDATION.md for
+the authorized pre-reboot installation and the unresolved post-reboot identity.
 Keep trusted pinned SSH access and an off-device backup. Never run Stillwater,
 stock or this controller as competing MIDI/USB owners. Preserve all existing
 music, histories, recordings and settings; installation does not migrate them.
@@ -80,8 +81,8 @@ No remote connection is needed to become hardware-ready. Shutdown removes ready.
 Before auto-start/cold boot acceptance, verify one supervisor/app, no stock or
 Stillwater competitor, manifest hashes, stopped transport, display/MIDI controls,
 private endpoint editing, disconnect release and deliberate recovery. Physical
-pad feel/hues and native audio need supervised human acceptance. A boot test is
-separate explicit authorization after a checkpoint. Never infer boot success
+pad feel/hues and native audio need supervised human acceptance. A boot test needs a saved checkpoint and verified device identity. The current
+installation/boot/check scope is already authorized; see VALIDATION.md. Never infer boot success
 from a local simulator screenshot.
 
 ## Recovery / rollback / removal

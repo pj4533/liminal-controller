@@ -27,12 +27,22 @@ and `python3 src/app.py --simulate --seconds 10 --screenshot .build/frame.ppm`
 in separate terminals. The simulator is intentionally headless; automated tests
 exercise the real MIDI parser and Controller.event handler.
 
-**Status:** application, tests and release tooling are implemented; native macOS
-audio qualification and actual Push acceptance remain required. Liminal's `push3`
-branch advertises partial capabilities: Lo-Fi bass/lead/mids remain disabled until
-isolated-wet native qualification; Film and Space manual pads are unavailable.
-The UI reports unsupported controls and keeps unprepared pads dark. Network RTT
-is measured round trip, never represented as pad-to-audio latency.
+**Status (2026-11-20):** implementation and repairs are pushed. Controller
+`c5917418` was installed and verified running before a controlled reboot:
+exclusive controller ownership, advancing USB display transfers and disconnected
+readiness were observed; the existing session and 104 recordings were preserved,
+and return to Stillwater was exercised. After reboot, strict SSH rejected a
+changed host key. No replacement key was accepted; post-reboot identity and
+operation are **unknown**. Latest documentation/bundle revisions have not been
+deployed over that lost trust.
+
+The paired Liminal source is `push3` commit `378174bd`. Native Mac builds/tests,
+visionOS compilation and connected audio/playability remain unverified; the
+pre-reboot controller was disconnected from Liminal. Lo-Fi bass/lead/mids remain
+disabled pending isolated-wet measurements; Film and Space manual pads are
+unavailable. Network RTT is never represented as pad-to-audio latency. See the
+[host coding-session handoff](docs/MAC_NATIVE_HANDOFF.md) for native work and
+trusted device identity recovery. The full playable-project objective is open.
 
 Read [installation/recovery](docs/INSTALL.md), [controls](docs/CONTROLS.md),
 [architecture](docs/ARCHITECTURE.md), [protocol](docs/protocol-v1.md),

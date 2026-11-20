@@ -37,8 +37,8 @@ native tone, musical continuity, effect quality or latency.
 `docs/media/simulator-device.png` is the real stopped production renderer at
 960×160, inspected visually. Range/contact sheet and disconnected view are
 synthetic previews, not actual Push screenshots. There are no copied private
-screenshots or recordings. Physical pad hue/feel and actual display transmission
-need a separately authorized hardware acceptance run.
+screenshots or recordings. Physical pad hue/feel and an independent physical-screen view remain unverified.
+Pre-reboot successful USB display transfers were observed as described below.
 
 ## One Mac native entry point
 
@@ -60,12 +60,35 @@ pass. Film/Space Manual remain unsupported. Ambient/drum/chop ready flags are
 asset/routing facts and do not substitute for native acceptance. No pad-to-audio
 latency, gap-free playback or human listening claim is made.
 
-No device, boot dispatcher, existing Stillwater installation, Liminal main
-branch or public service was changed by these tests. Actual-device acceptance
-must separately prove stopped/disconnected boot, exclusive hardware ownership,
-all64pads/control mapping, display hashes/counters, endpoint UI, disconnect voice
-release, practical Stillwater/stock return and preserved user data. A controlled
-boot test requires its own saved checkpoint and authorization.
+## Hardware evidence and current boundary (2026-11-20)
+
+The authorized device installation and controlled boot sequence proceeded after
+the local tests. Last verified installed controller commit:
+`c5917418ce4f0b785ab5077e395b09a72dc0f356`, paired with Liminal `push3` source
+`378174bd98ae74429f0b4b577f5e7dddbcb83e8c`. Before reboot, exactly one controller
+supervisor/app owned MIDI/USB, readiness was true, and successful USB display
+transfers advanced. The controller was disconnected because the Liminal listener
+was unavailable; no remote audio or connected playability was verified.
+
+The existing session remained unchanged and 104 recordings were preserved in
+place and inventoried. Verbatim recovery init backups were checked, and the
+Stillwater recovery route was exercised successfully before controller selection
+was restored. Selecting stock was exercised; stock app startup was not claimed.
+A checkpoint was saved before the controlled reboot.
+
+Strict SSH reconnect then rejected a changed ED25519 host key. No replacement
+key was accepted, no pin was edited, and no remote command ran after that mismatch.
+Post-reboot device identity, app state, ownership and boot success are **unknown**.
+The latest public docs/bundle are newer than the last verified installed payload;
+repacking does not deploy them. Operational identity details remain private.
+
+PJ already authorized installation, boot takeover and appropriate device checks;
+this is not a request for repeated approval. Independent trusted device identity
+verification must precede reconnect or deployment. Native builds/tests and audio
+qualification remain evidence prerequisites. After trust is restored, complete
+boot/ownership, all64pads/control mapping, physical display, endpoint UI,
+disconnect release and recovery checks, preserving the existing data/checkpoints.
+Liminal main remains untouched. The full playable project is not yet accepted.
 
 ## Integration review repairs (2026-11-20)
 
