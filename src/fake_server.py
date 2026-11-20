@@ -52,7 +52,8 @@ class FakeServer:
         elif action=='transport':self.state['transport']['state']=f['state'];self.held.clear()
         elif action=='parameter':
             p=next((p for p in (c or {}).get('parameters',[]) if p['id']==f['parameter']),None)
-            if not p or not p['enabled']:error='unavailable'
+            if not isinstance(f.get('parameter'),str):error='bad_message'
+            elif not p or not p['enabled']:error='unavailable'
             elif not 0<=f['value']<=1:error='out_of_range'
             else:p['value']=f['value'];p['display']='%d%%'%round(f['value']*100)
         elif action=='mode':

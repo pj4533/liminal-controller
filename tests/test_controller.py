@@ -106,6 +106,34 @@ class TransportTests(unittest.TestCase):
         c=self.client;self.pump(c,lambda:c.connected and c.rtt is not None);old=c.session;generation=c.generation
         c.command('parameter',channel='ambient.drone',parameter='gain',value=.7);self.pump(c,lambda:c.state['channels'][7]['parameters'][0]['value']==.7)
         self.server.drop();self.pump(c,lambda:not c.connected);self.pump(c,lambda:c.connected,3);self.assertNotEqual(c.session,old);self.assertGreater(c.generation,generation);self.assertFalse(c.edits)
+    def test_physical_parameter_events_encode_valid_wire_and_apply(self):
+        c=self.client;self.pump(c,lambda:c.connected);ui=Controller(c)
+        for cc,parameter,value in ((72,'low_cut',.005),(71,'gain',.505),(20,'gain',0)):
+            with self.subTest(cc=cc):
+                before=len(self.server.commands)
+                ui.event(event('cc',cc,1))
+                self.pump(c,lambda:len(self.server.commands)>before)
+                # These are decoded TCP bytes produced by Controller.event + Client,
+                # not a command constructed directly by the test.
+                frame=self.server.commands[-1]
+                self.assertIs(type(frame['parameter']),str)
+                self.assertEqual(frame['parameter'],parameter)
+                self.assertEqual(frame['channel'],'ambient.drone')
+                self.pump(c,lambda:next(p['value'] for p in ui.channel['parameters'] if p['id']==parameter)==value)
+                self.assertFalse(c.error)
+        ui.event(event('cc',112,1));ui.event(event('cc',72,1))
+        self.pump(c,lambda:len(self.server.commands)==4)
+        self.assertEqual(self.server.commands[-1]['channel'],'ambient.pad')
+        self.assertEqual(self.server.commands[-1]['parameter'],'gain')
+        self.assertEqual(b''.join(encode(f) for f in self.server.commands),
+                         (ROOT/'tests/fixtures/controller-parameters.ndjson').read_bytes())
+        self.pump(c,lambda:next(ch for ch in c.state['channels'] if ch['id']=='ambient.pad')['parameters'][0]['value']==.505)
+
+    def test_fake_peer_rejects_array_parameter_like_native_schema(self):
+        frame=dict(v=1,type='command',session=self.server.state['session'],seq=1,
+                   action='parameter',channel='ambient.drone',parameter=['ambient.drone','gain'],value=.7)
+        self.assertEqual(self.server.apply(frame)['error'],'bad_message')
+
     def test_note_release_original(self):
         c=self.client;self.pump(c,lambda:c.connected);ui=Controller(c);ui.event(event('cc',49));ui.event(event('cc',20));self.pump(c,lambda:ui.channel['mode']=='manual');ui.event(event('cc',85));self.pump(c,lambda:c.state['transport']['state']=='playing');ui.event(event('note',36));self.pump(c,lambda:bool(self.server.held));ui.select(1);ui.event(event('note_off',36,0));self.pump(c,lambda:not self.server.held)
     def test_stale_bank_rejected(self):

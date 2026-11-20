@@ -46,12 +46,12 @@ class Controller:
     def parameter(self,c,key,delta=None,value=None):
         p=next((p for p in c.get('parameters',[]) if p['id']==key),None)
         if not c.get('active') or not p or not p.get('enabled',True):self.message='Control unavailable';return
-        key=(c['id'],key)
+        target_key=(c['id'],key)
         import time
-        target,when=self.targets.get(key,(p['value'],0))
+        target,when=self.targets.get(target_key,(p['value'],0))
         if time.monotonic()-when>.3:target=p['value']
         v=max(0,min(1,target+delta if delta is not None else value))
-        self.targets[key]=(v,time.monotonic())
+        self.targets[target_key]=(v,time.monotonic())
         self.send('parameter',channel=c['id'],parameter=key,value=v)
     def event(self,e):
         self.sync();kind,n,v=e['kind'],e['number'],e['value'];c=self.channel

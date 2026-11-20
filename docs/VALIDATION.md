@@ -5,7 +5,7 @@ Local validation on2026-11-20:
 | Command | Result |
 |---|---|
 | `python3 -m unittest discover -s tests -v` | 41 passed,0 failed (Python3.11 Linux host) |
-| `/tmp/Python-3.10.14/python -m unittest discover -s tests -v` | 41 passed,0 failed (locally built CPython3.10.14, matching device version) |
+| `/tmp/Python-3.10.14/python -m unittest discover -s tests -v` | 43 passed,0 failed (locally built CPython3.10.14, matching device version) |
 | `/tmp/Python-3.10.14/python scripts/demo.py --screenshot .build/python310-demo.ppm` | pass, real simulator entry point+TCP fake peer, no hardware/audio |
 | `python3 scripts/pack.py` | pass, manifest plus whitelisted release archive |
 
@@ -66,3 +66,19 @@ must separately prove stopped/disconnected boot, exclusive hardware ownership,
 all64pads/control mapping, display hashes/counters, endpoint UI, disconnect voice
 release, practical Stillwater/stock return and preserved user data. A controlled
 boot test requires its own saved checkpoint and authorization.
+
+## Integration review repairs (2026-11-20)
+
+Real Controller.event device FX, mixer and mute packets now retain string parameter
+IDs separately from the local target dictionary key. The 43-test Python 3.10.14
+suite includes TCP-applied events and byte-for-byte checks of
+`tests/fixtures/controller-parameters.ndjson`; the same captured bytes feed the
+native `ControllerProtocolTests.actualPythonControllerParameterFramesValidateNativeSchema`
+test. The fake peer rejects array parameter IDs with `bad_message` like the native
+schema. Native tests remain unexecuted on Linux.
+
+`python3 scripts/pack.py --liminal-commit FULL_PUSH3_COMMIT` records both source
+commits in the manifest. Run after committing the controller, then verify manifest
+hashes and the paired Liminal branch. Omitted Liminal metadata is explicitly null.
+See [Mac handoff](MAC_NATIVE_HANDOFF.md) for the concrete build/test and qualification
+sequence. A failed native command is a blocking result, regardless of Linux checks.
