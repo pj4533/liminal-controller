@@ -21,7 +21,7 @@ def competitors():
     for p in Path('/proc').glob('[0-9]*/cmdline'):
         try:
             argv=p.read_bytes().split(b'\0');text=b' '.join(argv)
-            if (b'/liminal-controller/src/' in text or b'/liminal-controller/scripts/supervisor.py' in text or b'/push-ambient/src/' in text or b'/push-ambient/scripts/supervisor.py' in text or any(Path(a.decode(errors='replace')).name in ('Live','Push3','Push3Launcher') for a in argv if a)):
+            if (b'/liminal-controller/src/' in text or b'/liminal-controller/scripts/supervisor.py' in text or b'/push-ambient/src/' in text or b'/push-ambient/scripts/supervisor.py' in text or any(Path(a.decode(errors='replace')).name in ('Live','Push3','Push3Launcher','push3-launcher.pyc') for a in argv if a)):
                 found.append(int(p.parent.name))
         except OSError:pass
     return found
@@ -53,6 +53,9 @@ def main():
             os.close(read)
             record=dict(pid=child.pid,start=identity(child.pid));temp=registry.with_suffix('.tmp');temp.write_text(json.dumps(record));os.replace(temp,registry)
             os.write(write,b'1');os.close(write)
+            if not a.simulate:
+                with (home/'boot-success.log').open('ab',buffering=0) as bootlog:
+                    subprocess.Popen([sys.executable,str(ROOT/'scripts/boot-success.py'),'--home',str(home),'--pid',str(child.pid)],stdout=bootlog,stderr=subprocess.STDOUT,start_new_session=True)
             while running and child.poll() is None:time.sleep(.1)
             if child.poll() is None:
                 child.terminate()

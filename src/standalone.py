@@ -63,14 +63,18 @@ class Instrument:
             if identity:self.send(8,identity=identity)
             return
         if kind=='note' and 36<=number<=99:
-            ch=self.selected;pad=number-36;bank=self.current
+            # Snapshot the native current source, not the UI's last tick (which
+            # can straddle a boundary while a replacement is being prepared).
+            slot=self.engine.status()['bank']
+            if slot not in self.engine.banks:return
+            ch=self.selected;pad=number-36;bank=self.engine.banks[slot][1]
             if not self.manual[ch]:
                 if ch==0:
                     index=self.drum_page*64+pad
                     if index<len(self.catalog):self.request_next(index)
                 return
             if number in self.held:self.send(8,identity=self.held.pop(number))
-            self.identity+=1;identity=self.identity;slot=self.last_bank
+            self.identity+=1;identity=self.identity
             if ch in (0,4,5):
                 if ch==0:local=bank['drumcuts'][pad%4];gain=bank['events'][0]['gain']*.9
                 elif ch==4:

@@ -1,8 +1,7 @@
 # Standalone validation
 
-Hardware installation is blocked by a changed SSH host key. No new pin was
-accepted; no hardware deployment, physical audio, real-time deadline, reboot or
-device Python3.10 acceptance is claimed by these host tests.
+SSH identity has been independently verified for primary and secondary OS.
+Device qualification is separate from the host memory-render tests below.
 
 On the ARM host with Python3.11.2:
 
@@ -13,7 +12,7 @@ python3 scripts/rehearse-standalone.py --assets /PRIVATE/assets --out /PRIVATE/e
 ZIG=/verified/zig-0.13.0/zig sh scripts/build-native.sh device
 ```
 
-The unit suite passes75tests, including43 inherited controller tests, native
+The unit suite passes82tests, including43 inherited controller tests, native
 PCM/mode/stop/boundary/held-release/queue/voice limits, queued-onset bank pins,
 source programme/sample policies, durable dialogue ledger, image cache failure,
 rights validation and five isolated install/recovery safety regressions.
@@ -27,7 +26,7 @@ over three actual credited CC0 image caches. Private evidence contains the
 acceptance JSON, framebuffer previews and memory-rendered WAV, never git assets.
 
 The cross-build is ELF64 x86_64 with maximum GLIBC requirement2.34, within the
-specified2.35 target. All32 Python source/script files parse with Python3.10
+specified2.35 target. All33 Python source/script files parse with Python3.10
 grammar. The prior controller's Python3.10 interpreter was no longer present;
 the new branch has not yet been executed under that interpreter or device ALSA.
 

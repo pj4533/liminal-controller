@@ -26,7 +26,7 @@ def main():
     signal.signal(signal.SIGTERM,stop);signal.signal(signal.SIGINT,stop)
     engine=Sampler(a.engine or a.home/'engine.so');ui=None;media=None;display=midi=None;ready=a.home/'ready.json';frame=None;last=0;leds={};controls={};started=time.monotonic()
     try:
-        ui=Instrument(engine,a.assets or a.home/'private-assets',a.home);background=Background(a.assets or a.home/'private-assets')
+        ui=Instrument(engine,a.assets or a.home/'private-assets',a.home);background=Background(a.assets or a.home/'private-assets',blender=engine.blend)
         started=time.monotonic();last_media=started
         if not a.simulate:
             media=ImageWorker(a.home)

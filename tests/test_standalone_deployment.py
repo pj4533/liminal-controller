@@ -14,6 +14,32 @@ def load(name,file):
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 
 class DeploymentTests(unittest.TestCase):
+    def test_stock_autostart_rejected_before_release(self):
+        module=load('deploy','deploy-staged.py')
+        with tempfile.TemporaryDirectory() as t:
+            init=Path(t)/'init';init.write_bytes(b'other stock')
+            with self.assertRaisesRegex(RuntimeError,'designated primary'):module.preflight(init,False)
+            self.assertEqual(init.read_bytes(),b'other stock')
+    def test_qualification_requires_known_init(self):
+        module=load('deploy','deploy-staged.py')
+        with tempfile.TemporaryDirectory() as t:
+            init=Path(t)/'init';init.write_bytes(b'unknown')
+            with self.assertRaisesRegex(RuntimeError,'Unknown active init'):module.preflight(init,True)
+    def test_rollback_refuses_competing_owner(self):
+        module=load('deploy','deploy-staged.py')
+        class Owner:
+            def competitors(self):return [123]
+        with tempfile.TemporaryDirectory() as t:
+            home=Path(t);init=home/'init';init.write_bytes(b'unchanged')
+            with self.assertRaisesRegex(RuntimeError,'competing owner'):module.recover(home,init,b'prior',Owner())
+            self.assertEqual(init.read_bytes(),b'unchanged')
+    def test_boot_success_requires_audio_and_display_progress(self):
+        module=load('boot_success','boot-success.py')
+        base=dict(written=100,display_frames=10)
+        current=dict(pid=42,ready=True,alive=True,written=200,display_frames=12,xruns=0,error='')
+        self.assertTrue(module.healthy(base,current,42))
+        for field,value in (('pid',43),('written',100),('display_frames',10),('xruns',1),('error','bad')):
+            changed=dict(current);changed[field]=value;self.assertFalse(module.healthy(base,changed,42))
     def test_install_refuses_existing_recovery(self):
         module=load('installer','install-standalone.py')
         with tempfile.TemporaryDirectory() as t:

@@ -1,10 +1,13 @@
 # Install and recover
 
-This branch has not been installed on hardware. The current blocker is a changed
-SSH host key without independent device identity proof. Never accept a scanned
-replacement key or disable strict checking. A trusted host's already established
-connection/inventory or the physical device console must establish the public
-key before deployment. A changed key at the same IP is not identity proof.
+The device has independent cryptographic identity verification for both OS
+partitions. Preserve strict SSH checking and the original pin. A fresh scanned
+key, matching IP or reboot timestamp alone must never authorize deployment.
+The current secondary stock OS must remain an untouched recovery installation.
+Use `deploy-staged.py --qualify-only` for current-session testing: preflight
+before stopping, graceful SIGTERM, checkpoints and automatic fail-closed rollback.
+It never installs over secondary stock init. Permanent installation belongs only
+in the verified primary dispatcher after runtime qualification.
 
 ## Build and private staging
 
@@ -89,3 +92,18 @@ the prior installation entirely, stop/prove all owners dead, verify
 bytes and executable mode to `/etc/init.d/push3`. Keep all new/old data and
 backups. No uninstall deletes music. Do not migrate/restore older sessions as
 part of an application rollback.
+
+## Primary boot success
+
+GRUB sets the other root as next default before each boot. Stock normally calls
+`com.ableton.update.registerSuccessfulStartup` at `/com/ableton/Update` to
+acknowledge success. Bypassing that contract caused the prior controller boot to
+fall back to the older secondary OS/key. `boot-success.py` acts only on primary,
+requires60seconds of sustained real ALSA/display progress without xruns or
+errors, then starts the stock UpdateDBusService without its Live service if
+needed and calls that existing API. It verifies primary default/secondary
+fallback in grubenv and saves a boot-ID receipt. Failure leaves secondary
+fallback selected; it never forces reboot, resets firmware or starts Live.
+Before changing primary preserve its exact init, grubenv and recovery hashes.
+Leave secondary init byte-for-byte stock. A successful controlled reboot and
+then another boot are the persistence acceptance gates.

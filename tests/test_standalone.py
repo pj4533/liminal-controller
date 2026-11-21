@@ -68,6 +68,25 @@ class NativeTests(unittest.TestCase):
         self.s.render(1);self.assertEqual(self.s.status()['voices'],1)
     def test_limiter_finite(self):
         self.s.install(self.bank());self.s.command(1);self.s.command(10,event=Event(gain=1));out=self.s.render(1024);self.assertTrue(all(math.isfinite(x) and abs(x)<1 for x in out))
+    def test_future_and_retired_manual_sources_rejected(self):
+        a=self.s.install(self.bank(length=64));self.s.render(1);b=self.s.install(self.bank(1,length=64));self.s.render(1)
+        self.s.command(3,2,1);e=Event(channel=2,sample=0,gate=9000,speed=1,gain=.2,attack=8,release=32)
+        self.assertFalse(self.s.command(7,b,1,identity=1,event=e))
+        self.assertTrue(self.s.command(7,a,0,identity=2,event=e));self.s.command(1);self.s.render(65)
+        self.assertFalse(self.s.command(7,a,0,identity=3,event=e))
+        c=self.s.install(self.bank(2,length=64));self.s.render(1);d=self.s.install(self.bank(3,length=64));self.s.render(1)
+        self.assertEqual(self.s.status()['voices'],1);self.assertEqual(self.s.lib.lm_state(self.s.ptr,a),2)
+        self.assertEqual(self.s.lib.lm_state(self.s.ptr,c),0)
+        self.s.command(8,identity=2);self.s.render(40);self.assertEqual(self.s.lib.lm_state(self.s.ptr,a),0)
+    def test_stop_then_immediate_play_does_not_kill_restarted_take(self):
+        self.s.install(self.bank(length=10000,channel=0));self.s.command(1);self.s.render(100)
+        self.s.command(2);self.s.render(200);self.s.command(1);self.s.render(1500)
+        self.assertTrue(self.s.status()['playing']);self.assertGreater(self.s.status()['voices'],0)
+        self.assertGreater(max(map(abs,self.s.render(256))),.001)
+    def test_native_background_crossfade(self):
+        a=array.array('H',[0])*163840;b=array.array('H',[65535])*163840
+        self.assertEqual(self.s.blend(a,b,0),a.tobytes());self.assertEqual(self.s.blend(a,b,1),b.tobytes())
+        out=array.array('H',self.s.blend(a,b,.5));self.assertEqual(out[0],16|(32<<5)|(16<<11));self.assertEqual(len(out),163840)
 class PolicyTests(unittest.TestCase):
     def test_choose_avoids_repeat_with_tempo_pool(self):
         import random

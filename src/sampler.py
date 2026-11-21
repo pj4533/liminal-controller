@@ -28,6 +28,7 @@ class Sampler:
         for name in ('frames','written','xruns'):
             f=getattr(L,'lm_'+name);f.argtypes=[C.c_void_p];f.restype=C.c_ulong
         L.lm_peak.argtypes=[C.c_void_p];L.lm_peak.restype=C.c_float
+        L.lm_blend.argtypes=[C.POINTER(C.c_uint16),C.POINTER(C.c_uint16),C.POINTER(C.c_uint16),C.c_int,C.c_int]
         self.ptr=L.lm_create()
         if not self.ptr:raise MemoryError('native engine')
         self.owners={};self.bank_owners={};self.banks={}
@@ -56,6 +57,11 @@ class Sampler:
         self.last_admission=self.lib.lm_command(self.ptr,C.byref(c));return self.last_admission==1
     def render(self,frames):
         out=(C.c_float*(frames*2))();self.lib.lm_render(self.ptr,out,frames);return out
+    def blend(self,a,b,weight):
+        if len(a)!=163840 or len(b)!=163840:raise ValueError('Framebuffer dimensions')
+        out=(C.c_uint16*len(a))()
+        self.lib.lm_blend((C.c_uint16*len(a)).from_buffer(a),(C.c_uint16*len(b)).from_buffer(b),out,len(a),round(max(0,min(1,weight))*256))
+        return bytes(out)
     def status(self):
         return dict(bank=self.lib.lm_status(self.ptr,0),position=self.lib.lm_status(self.ptr,1),playing=bool(self.lib.lm_status(self.ptr,2)),overflow=self.lib.lm_status(self.ptr,3),voices=self.lib.lm_status(self.ptr,4),alive=bool(self.lib.lm_status(self.ptr,5)),frames=self.lib.lm_frames(self.ptr),written=self.lib.lm_written(self.ptr),xruns=self.lib.lm_xruns(self.ptr),peak=self.lib.lm_peak(self.ptr))
     def start(self):

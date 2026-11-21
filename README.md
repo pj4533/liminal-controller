@@ -6,10 +6,10 @@ slowly crossfading collection images behind readable controls. No Mac instance,
 controller connection, AI music/image service or network listener is needed.
 Boot starts stopped; Play starts the local arrangement.
 
-**Status:** locally implemented and tested; a private complete x86_64 payload is
-staged. Hardware installation and audible/physical acceptance remain blocked by
-an unverified changed SSH host identity. Do not treat native memory renders as
-proof of device operation. Existing controller/Stillwater music is preserved.
+**Status:** host implementation and private x86_64 staging are verified. Device
+identity has been independently verified across the two OS partitions. Runtime
+and persistent-primary boot qualification are in progress; physical listening
+acceptance remains separate. Existing controller/Stillwater music is preserved.
 
 Read [specification](docs/STANDALONE_SPEC.md),
 [architecture and limitations](docs/STANDALONE_ARCHITECTURE.md),

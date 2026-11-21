@@ -11,6 +11,7 @@ import subprocess
 import tarfile
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE=('src/image_worker.py','src/standalone_app.py','src/standalone.py','src/standalone_render.py','src/sampler.py','src/composition.py','src/dialogue_ledger.py','src/hardware.py','src/midi.py','src/canvas.py','scripts/standalone-supervisor.py','scripts/standalone-boot.py','scripts/install-standalone.py','scripts/deploy-staged.py','LICENSE','LICENSE.push-hack','NOTICE','docs/lofi-samples.md')
+SOURCE+=('scripts/boot-success.py','scripts/qualify-device.py')
 def digest(path):
     h=hashlib.sha256()
     with path.open('rb') as stream:

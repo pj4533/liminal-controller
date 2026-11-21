@@ -6,7 +6,8 @@ import time
 from canvas import Canvas,INK,BRASS,MIST,DARK
 from standalone import NAMES
 class Background:
-    def __init__(self,assets,clock=time.monotonic):
+    def __init__(self,assets,clock=time.monotonic,blender=None):
+        self.blender=blender
         self.clock=clock;self.started=clock();self.images=[];self.credits=[];self.error=''
         try:
             records=json.loads((Path(assets)/'images.json').read_text())
@@ -28,11 +29,8 @@ class Background:
         elapsed=self.clock()-self.started;index=int(elapsed//90)%len(self.images);phase=elapsed%90
         if phase<82:return self.images[index].tobytes()
         a=self.images[index];b=self.images[(index+1)%len(self.images)];weight=(phase-82)/8
-        # Fixed 8-second transition, no audio/network work on the display path.
-        out=array.array('H',[0])*len(a)
-        for i,(x,y) in enumerate(zip(a,b)):
-            r=round((x&31)*(1-weight)+(y&31)*weight);g=round(((x>>5)&63)*(1-weight)+((y>>5)&63)*weight);bl=round((x>>11)*(1-weight)+(y>>11)*weight);out[i]=r|(g<<5)|(bl<<11)
-        return out.tobytes()
+        # Bounded native loop releases the GIL; no Python pixel loop delays MIDI.
+        return self.blender(a,b,weight) if self.blender else a.tobytes()
 def render(ui,status,background):
     c=Canvas(background.frame());bank=ui.current
     c.rect(0,0,960,26,DARK);c.text(8,7,'LIMINAL',INK,2)

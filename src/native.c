@@ -70,7 +70,7 @@ int lm_command(Engine *s,const Command *c){
   if(c->a<0||c->a>=NB)return -1;
   int expected=atomic_load(&s->state[c->a]);
   do {if((expected&3)!=2)return -1;}while(!atomic_compare_exchange_weak(&s->state[c->a],&expected,expected+4));
-  if(s->banks[c->a].revision!=c->b){atomic_fetch_sub(&s->state[c->a],4);return -1;}
+  if(atomic_load(&s->shown_bank)!=c->a||s->banks[c->a].revision!=c->b){atomic_fetch_sub(&s->state[c->a],4);return -1;}
  }
  s->queue[w%NQ]=*c;atomic_store_explicit(&s->write,w+1,memory_order_release);return 1;
 }
@@ -85,13 +85,13 @@ static void commands(Engine *s){
  for(unsigned budget=0;r!=w&&budget<NQ;budget++,r++){
   Command c=s->queue[r%NQ];int ch=c.a;
   switch(c.op){
-   case 1:if(s->current>=0)s->playing=1;break;
+   case 1:s->hush=0;if(s->current>=0)s->playing=1;break;
    case 2:s->hush=1323;s->playing=0;s->position=s->event=0;for(int i=0;i<NV;i++){release(&s->voices[i]);if(s->voices[i].left>1323)s->voices[i].left=1323;}memset(s->delay,0,sizeof s->delay);break;
    case 3:if(ch>=0&&ch<NC){s->manual[ch]=c.b;for(int i=0;i<NV;i++)if(s->voices[i].e.channel==ch&&s->voices[i].id==0)release(&s->voices[i]);}break;
    case 4:if(ch>=0&&ch<NC)s->level[ch]=fminf(1,fmaxf(0,c.event.gain));break;
    case 5:if(ch>=0&&ch<NC)s->muted[ch]=c.b;break;
-   case 6:if(ch>=0&&ch<NB&&atomic_load(&s->state[ch])==1){atomic_store(&s->state[ch],2);if(s->current<0){s->current=ch;s->event=s->position=0;}else {if(s->next>=0)atomic_store(&s->state[s->next],0);s->next=ch;}}break;
-   case 7:s->hush=0;if(s->current>=0&&c.event.channel>=0&&c.event.channel<NC&&s->manual[c.event.channel])note(s,c.event,c.a,c.id);atomic_fetch_sub(&s->state[c.a],4);break;
+   case 6:if(ch>=0&&ch<NB&&atomic_load(&s->state[ch])==1){atomic_store(&s->state[ch],2);if(s->current<0){s->current=ch;s->event=s->position=0;}else s->next=ch;}break;
+   case 7:if(c.a==s->current&&s->banks[c.a].revision==c.b&&c.event.channel>=0&&c.event.channel<NC&&s->manual[c.event.channel]){s->hush=0;note(s,c.event,c.a,c.id);}atomic_fetch_sub(&s->state[c.a],4);break;
    case 8:for(int i=0;i<NV;i++)if(s->voices[i].id==c.id)release(&s->voices[i]);break;
    case 9:for(int i=0;i<NV;i++)if(s->voices[i].id)release(&s->voices[i]);break;
    case 10:s->master=fminf(1,fmaxf(0,c.event.gain));break;
@@ -164,6 +164,16 @@ unsigned long lm_frames(Engine *s){return atomic_load(&s->frames);}
 unsigned long lm_written(Engine *s){return atomic_load(&s->written);}
 unsigned long lm_xruns(Engine *s){return atomic_load(&s->xruns);}
 float lm_peak(Engine *s){return atomic_load(&s->peak);}
+/* Display-only BGR565 crossfade. Never called by the audio thread. */
+void lm_blend(const uint16_t *a,const uint16_t *b,uint16_t *out,int count,int weight){
+ if(count<0||count>163840||weight<0||weight>256)return;
+ for(int i=0;i<count;i++){
+  unsigned x=a[i],y=b[i];unsigned r=((x&31)*(256-weight)+(y&31)*weight+128)>>8;
+  unsigned g=(((x>>5)&63)*(256-weight)+((y>>5)&63)*weight+128)>>8;
+  unsigned blue=((x>>11)*(256-weight)+(y>>11)*weight+128)>>8;
+  out[i]=(uint16_t)(r|(g<<5)|(blue<<11));
+ }
+}
 static void *audio_loop(void *arg){
  Engine *s=arg;struct sched_param sp={.sched_priority=30};pthread_setschedparam(pthread_self(),SCHED_FIFO,&sp);
  float stereo[256*2];unsigned char packed[256*16*3];
