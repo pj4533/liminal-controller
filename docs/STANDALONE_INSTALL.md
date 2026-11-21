@@ -99,11 +99,18 @@ GRUB sets the other root as next default before each boot. Stock normally calls
 `com.ableton.update.registerSuccessfulStartup` at `/com/ableton/Update` to
 acknowledge success. Bypassing that contract caused the prior controller boot to
 fall back to the older secondary OS/key. `boot-success.py` acts only on primary,
-requires60seconds of sustained real ALSA/display progress without xruns or
-errors, then starts the stock UpdateDBusService without its Live service if
-needed and calls that existing API. It verifies primary default/secondary
+requires60seconds of fresh, ready real ALSA/display progress without new xruns
+or errors. Any xrun counter increase or decrease resets the window; the receipt
+retains baseline/final totals and delta. It calls the existing stock API and,
+if explicit service launch is needed, omits `--with-live-service`. Stock D-Bus
+autoactivation can still launch UpdateDBusService with that flag: this was
+observed on the accepted device, with no Live/Push3 launcher process and no
+USB/ALSA descriptors in the service. That stock configuration stays unchanged.
+Hardware exclusivity must be checked directly. It verifies primary default/secondary
 fallback in grubenv and saves a boot-ID receipt. Failure leaves secondary
 fallback selected; it never forces reboot, resets firmware or starts Live.
 Before changing primary preserve its exact init, grubenv and recovery hashes.
 Leave secondary init byte-for-byte stock. A successful controlled reboot and
 then another boot are the persistence acceptance gates.
+Both controlled post-fix boots passed for runtime1dfaa516; see
+STANDALONE_VALIDATION.md. Later documentation commits are not deployed versions.

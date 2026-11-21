@@ -6,10 +6,20 @@ slowly crossfading collection images behind readable controls. No Mac instance,
 controller connection, AI music/image service or network listener is needed.
 Boot starts stopped; Play starts the local arrangement.
 
-**Status:** host implementation and private x86_64 staging are verified. Device
-identity has been independently verified across the two OS partitions. Runtime
-and persistent-primary boot qualification are in progress; physical listening
-acceptance remains separate. Existing controller/Stillwater music is preserved.
+**Status:** live on Push 3, runtime **1dfaa5164933c8e6d00dafe18bec0d27ce074d27**.
+All 93 device tests and the silent full-take/six-channel manual rehearsal passed.
+Two controlled reboots returned automatically to primary with successful stock
+boot acknowledgement. It is ready and stopped, master at 45%, with all 100 AJ
+drum takes and 143 instrument samples installed. All 104 existing recordings
+and seven sessions are preserved. Physical button presses and listening remain
+unverified; [validation](docs/STANDALONE_VALIDATION.md) records the evidence.
+Later documentation commits do not change that installed runtime version.
+
+Press Play to start. Select a channel with the six top buttons; hold Shift and
+press its lower button for Manual, then play the pads. Mix exposes six channel
+levels on the first six encoders; the Volume encoder adjusts master. In Drums
+Auto, pads choose a take, arrows switch catalog pages, and Repeat requests
+another compatible take. Changes arrive at the next 16-bar boundary.
 
 Read [specification](docs/STANDALONE_SPEC.md),
 [architecture and limitations](docs/STANDALONE_ARCHITECTURE.md),
