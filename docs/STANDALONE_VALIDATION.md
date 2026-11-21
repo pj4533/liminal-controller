@@ -1,5 +1,49 @@
 # Standalone validation
 
+Live archive update on2026-11-21: deployed runtime
+**bc800b5ebc6a9ce5021be0f011fa7b317ce8e3fc**,279manifest hashes verified.
+Host101/101tests passed in2.161s; device101/101tests passed in2.136s. Strict native host/x86 builds pass. The final private
+library rehearsal again passed234checks with unchanged six-channel audio paths.
+
+Actual Push downloaded NewsMaga00_3.mp3 directly from IA and decoded48seconds
+starting at204.00seconds while the native ALSA engine played master-zero.
+Fetch/decode took31.096seconds; the fresh immutable bank published at55.722seconds
+on the next64-beat boundary. The entire rehearsal had0xruns/overflow and566USB
+frames. Synthetic MIDI selected Chops Manual, selected pad3 silently, changed
+start12.00→12.15seconds and length2.00→2.10seconds, and triggered a native voice.
+A separate on-device native memory render of that exact downloaded/edited PCM
+was finite, peak.0234085/RMS.00425167 over93122frames. It did not open ALSA.
+Forced offline fetch failure retained the active source and advancing playback.
+Stop returned peak0,voices0,playing=false. Poll p95 was2.294ms,max56.752ms;
+RSS320644KiB. These are synthetic dispatch/counter measurements, not physical
+pad latency or audible output acceptance. Master stayed zero throughout device
+qualification; normal service starts stopped at45%.
+
+All104recordings (16,887,273,274bytes; path/size/inode/mtime) and7session hashes
+match the original checkpoint. Only Liminal's runtime files were updated;
+existing primary dispatcher/recovery remained byte-for-byte unchanged.
+Private evidence: live-archive-shutdown-device.log, archive-qualified.png,
+live-archive-preboot-audit.json in the existing standalone work directory.
+The screenshot is a rendered native framebuffer, not a physical screen capture.
+
+A controlled reboot automatically returned to primary, boot
+`e506b885-3c7b-4d31-a1f9-7f4406dbe879`. The unchanged boot helper recorded
+60.084seconds of advancing ALSA/display progress with xruns1→1,delta0;
+one startup xrun preceded the settled window. Stock startup acknowledgement
+set primary default/secondary fallback. Service PID747 was alive, ready and
+stopped with peak0, next bank ready, no preparation/app/image/archive errors,
+and CACHED READY with the previous live source queued. The post-reboot audit
+again verified all279runtime hashes, exclusive device ownership, all104recordings
+and7sessions, and an unchanged primary dispatcher. Final sample CPU30.3% of
+one core (lifetime average),RSS201636KiB. Normal master remains45% by the
+unchanged shipped defaults. Documentation commits afterbc800b5 are not runtime
+updates. Private reboot evidence: live-archive-reboot.json and
+live-archive-postboot-audit.json.
+
+Earlier acceptance history follows; version numbers below describe those
+historical builds.
+
+
 SSH identity has been independently verified for primary and secondary OS.
 Live runtime on 2026-11-21 is **1dfaa5164933c8e6d00dafe18bec0d27ce074d27**.
 This documentation update does not deploy a new runtime. All 277 installed file

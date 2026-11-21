@@ -6,20 +6,24 @@ slowly crossfading collection images behind readable controls. No Mac instance,
 controller connection, AI music/image service or network listener is needed.
 Boot starts stopped; Play starts the local arrangement.
 
-**Status:** live on Push 3, runtime **1dfaa5164933c8e6d00dafe18bec0d27ce074d27**.
-All 93 device tests and the silent full-take/six-channel manual rehearsal passed.
-Two controlled reboots returned automatically to primary with successful stock
-boot acknowledgement. It is ready and stopped, master at 45%, with all 100 AJ
-drum takes and 143 instrument samples installed. All 104 existing recordings
-and seven sessions are preserved. Physical button presses and listening remain
-unverified; [validation](docs/STANDALONE_VALIDATION.md) records the evidence.
-Later documentation commits do not change that installed runtime version.
+**Status:** live Push runtime **bc800b5ebc6a9ce5021be0f011fa7b317ce8e3fc**.
+Live Internet Archive newsreel sourcing, background decoding, boundary publication
+and editable manual chops pass actual silent device qualification. All101device
+tests and234private-library rehearsal checks pass. Existing recordings/sessions
+are preserved. Physical listening and pad feel remain human checks; see
+[validation](docs/STANDALONE_VALIDATION.md).
 
 Press Play to start. Select a channel with the six top buttons; hold Shift and
 press its lower button for Manual, then play the pads. Mix exposes six channel
 levels on the first six encoders; the Volume encoder adjusts master. In Drums
 Auto, pads choose a take, arrows switch catalog pages, and Repeat requests
 another compatible take. Changes arrive at the next 16-bar boundary.
+
+With Chops selected, Repeat fetches fresh archive material directly on Push.
+Shift+lower5 enables Manual; pads trigger eight editable cuts. In Device view,
+encoder6 sets start,7 length,8 selected cut; Shift gives finer editing. New
+sources arrive at the next16-bar boundary. No computer is required; internet
+is needed for fresh sources, and failures retain local material.
 
 Read [specification](docs/STANDALONE_SPEC.md),
 [architecture and limitations](docs/STANDALONE_ARCHITECTURE.md),
@@ -37,7 +41,7 @@ python3 src/standalone_app.py --simulate --home /tmp/liminal-demo \
 ```
 
 Runtime is Python3.10 standard library plus the native C11 engine, existing ALSA
-and bundled separately licensed FFmpeg for off-thread image decoding. Pillow is
+and bundled separately licensed FFmpeg for off-thread image and archive audio decoding. Pillow is
 only needed by explicit host-side media preparation. Commercial AJ Hall WAVs
 are supplied privately by their owner; they are never committed or distributed
 in this source repository. Bundled acoustic sample credits are retained in

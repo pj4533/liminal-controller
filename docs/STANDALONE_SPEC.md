@@ -28,6 +28,12 @@ use the closest tempo plus4BPM pool and avoid immediate repetition.
 Approved API images change the interface background through a slow crossfade;
 opaque controls and text stay readable. Keyless Cleveland CC0 images and a
 provenance-checked curated Prelinger film excerpt are staged for offline use.
+Push also discovers public-domain Prelinger newsreels, downloads bounded audio
+derivatives and prepares fresh48second windows in the background. Repeat on
+Chops/Film requests new footage; automatic refresh runs every180seconds. Manual
+Chops exposes editable start/length and immediate pad audition from prepared PCM.
+New source banks publish at64beats; failures preserve the current source.
+No transcription or semantic dialogue selection is implemented.
 No full-screen reactive visualizer is added. Network failures retain the cache.
 
 Preserve all Stillwater sessions/history/recordings and the existing controller,
