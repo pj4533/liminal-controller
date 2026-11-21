@@ -67,7 +67,7 @@ int lm_command(Engine *s,const Command *c){
  unsigned w=atomic_load(&s->write),r=atomic_load_explicit(&s->read,memory_order_acquire);
  if(w-r>=NQ){atomic_fetch_add(&s->overflow,1);return 0;}
  if(c->op==7){
-  if(c->a<0||c->a>=NB)return -1;
+  if(c->a<0||c->a>=NB||c->event.frame<0||c->event.sample<0||c->event.sample>=NS)return -1;
   int expected=atomic_load(&s->state[c->a]);
   do {if((expected&3)!=2)return -1;}while(!atomic_compare_exchange_weak(&s->state[c->a],&expected,expected+4));
   if(atomic_load(&s->shown_bank)!=c->a||s->banks[c->a].revision!=c->b){atomic_fetch_sub(&s->state[c->a],4);return -1;}
@@ -77,7 +77,7 @@ int lm_command(Engine *s,const Command *c){
 static void release(Voice *v){if(v->live&&!v->releasing){v->releasing=1;v->left=(int)v->e.release;}}
 static void note(Engine *s,Event e,int bank,int id){
  if(e.channel<0||e.channel>=NC||e.sample<0||e.sample>=NS||!s->samples[e.sample].pcm)return;
- for(int i=0;i<NV;i++)if(!s->voices[i].live){s->voices[i]=(Voice){.live=1,.bank=bank,.id=id,.e=e};return;}
+ for(int i=0;i<NV;i++)if(!s->voices[i].live){s->voices[i]=(Voice){.live=1,.bank=bank,.id=id,.e=e,.pos=id?fmax(0,e.frame):0};return;}
  atomic_fetch_add(&s->overflow,1); /* Reject newest onset; never steal a held identity. */
 }
 static void commands(Engine *s){

@@ -49,14 +49,18 @@ def render(ui,status,background):
         labels=[name+' '+str(round(ui.level[i]*100)) for i,name in enumerate(NAMES)]+['','']
     else:
         ch=ui.selected;fx=ui.effects[ch];labels=['LEVEL '+str(round(ui.level[ch]*100)),'TONE '+str(round(fx[0]*100)),'ECHO '+str(round(fx[1]*100)),'ROOM '+str(round(fx[2]*100)),'PAN '+str(round(fx[3]*100)),'','','']
+    if not ui.mix and ui.selected in (4,5) and bank['cuts']:
+        start,length=ui.cut(bank,ui.chop);labels[5:] = ['START %.2fS'%(start/44100),'LENGTH %.2fS'%(length/44100),'PAD %d'%(ui.chop+1)]
     for i,label in enumerate(labels):c.text(i*120+7,99,label,INK)
     c.rect(0,126,960,34,DARK)
     drum=ui.catalog[bank['drum']]['name'].replace('AJ_HALL_DRUM_BREAK_','')
     c.text(8,130,'TAKE '+drum[:45],BRASS)
     c.text(370,130,'LEAD '+bank['programs'][0][0][:27],MIST)
-    c.text(8,146,ui.error[:80] or 'REPEAT: NEXT DRUM  ARROWS: OCTAVE/DRUM PAGE  DELETE: RELEASE  STOP: HUSH')
+    worker=ui.archive_worker
+    archive=('IA '+worker.state+(' NEXT16' if worker.credit and worker.credit.get('sha256')!=bank['archive_id'] else '')+' '+(worker.error if worker.error else (str(bank['film_credit'].get('title','')) if isinstance(bank['film_credit'],dict) else 'OFFLINE FALLBACK'))) if worker else ''
+    c.text(8,146,(ui.error or archive or 'REPEAT: NEXT DRUM  ARROWS: OCTAVE/DRUM PAGE  DELETE: RELEASE  STOP: HUSH')[:96])
     c.text(733,130,'API IMAGE / OFFLINE CACHE')
-    c.text(733,146,'CHOPS: EXACT 1-8 / FILM: LINE')
+    c.text(733,146,'CHOPS/FILM REPEAT: FETCH')
     if ui.settings:
         c.rect(0,28,960,132,DARK);c.text(12,40,'RECOVERY - SAVE AND STOP FIRST',INK,2)
         c.text(12,65,'LOWER 1 STILLWATER / 2 STOCK / 3 OLD CONTROLLER',MIST)
@@ -65,8 +69,8 @@ def render(ui,status,background):
     elif ui.help:
         c.rect(0,28,960,132,DARK);c.text(12,38,'LIMINAL / LOCAL LO-FI / NO MAC REQUIRED',INK,2)
         c.text(12,62,'SHIFT+LOWER AUTO/MANUAL. MELODIC PADS: RIGHT 1 / UP 3 SCALE DEGREES.')
-        c.text(12,79,'DRUM MANUAL: FOUR FIXED CUTS REPEAT. CHOPS: EIGHT EXACT ONE-SHOTS. FILM: ANCHOR LINE.')
-        c.text(12,96,'PLAY STARTS AUTO. STOP HUSHES. DELETE RELEASES MANUAL. SETTINGS: RECOVERY.')
+        c.text(12,79,'CHOPS: PADS 1-8. SHIFT+PAD SELECT. KNOBS 6 START / 7 LENGTH / 8 PAD. SHIFT: FINE.')
+        c.text(12,96,'CHOPS/FILM REPEAT FETCHES FRESH IA. NEW SOURCE AT 16 BARS. STOP HUSHES. NO TRANSCRIPTION.')
         credit=background.credits[0] if background.credits else {}
         c.text(12,116,'IMAGES: CLEVELAND MUSEUM / CC0 / '+str(credit.get('title','CACHE UNAVAILABLE'))[:60],BRASS)
         c.text(12,140,'SOURCE CREDITS AND FILE HASHES: LOCAL PRIVATE-ASSETS/*.JSON')

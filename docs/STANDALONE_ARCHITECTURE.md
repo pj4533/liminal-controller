@@ -44,14 +44,30 @@ master-finisher, virtual-record and spectral-hold chains and bass kick-landmark
 analysis. Soft limiting plus smoothed gains bound output. Taste, pad feel,
 acoustic balance and physical latency require actual device/human acceptance.
 
-`dialogue_ledger.py` persists committed, played acoustic fallback line identities
-by film; Stop/Play does not clear them. Preparation does not consume a line.
-The48second initial film cache contains six8second fallback lines; they are
-exhausted before least-recently-used recycling. This is bounded offline source
-coverage, not a claim of a full12-film speech/transcription pipeline. Source
-credits and exact excerpt times are in private-assets/film.json. Film bed and
-chops remain separate mixer paths. No live film discovery is required for the
-first playable bank; expanding the offline film crate is future work.
+`archive_worker.py` discovers public-domain Prelinger records through IA's
+advancedsearch endpoint, validates metadata and fetches a bounded derivative
+(prefer narration MP3; at most24MiB). One worker paces requests by2seconds,
+limits read/decode time, and decodes a48second stereo44.1kHz float PCM window
+with the existing licensed FFmpeg. Three immutable windows occupy at most51MiB
+of decoded cache; one source/temporary decode adds at most41MiB. A one-result
+mailbox and at most30 recent identifiers bound pending state. Failure preserves
+the current bank; startup retains the bundled fallback and restores the latest
+hash-validated live cache in the background. Ongoing requests run every180seconds
+or on Repeat with Chops/Film selected. No network listener is opened.
+
+The composition worker copies suggested energy/silence cuts into normal banks;
+fresh footage and automatic edits publish only at64-beat boundaries. Manual
+chops address the full immutable film PCM using Event.frame as source offset
+for identified manual onsets (automatic Event.frame remains schedule time).
+Start/length changes are small control metadata updates; no PCM slicing,
+allocation or decoding occurs on the audio thread. Existing onset bank pins
+retain both PCM and start/length through source changes. Film remains a separate
+mixer path and its manual anchor plays up to8seconds. This is editable acoustic
+chopping, without transcription or desktop semantic dialogue selection.
+`dialogue_ledger.py` continues to track only committed offline fallback lines;
+live source selection retains recent source identities in the archive worker.
+Exact source URL, rights, window time, SHA256 and suggested cuts live in private
+archive-cache JSON beside the decoded PCM.
 
 `image_worker.py` fetches only keyless Cleveland records with CC0 status and
 `images.print.url`, HTTPS, bounded downloads/timeouts and off-thread FFmpeg

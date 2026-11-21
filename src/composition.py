@@ -42,7 +42,7 @@ class Instruments:
         sample=min(choices,key=lambda e:(abs(e['root']-midi),abs(e['layer']-layer)))
         return dict(frame=round(beat*SR*60/bpm),channel=ch,sample=sample['index'],gate=max(1,round(length*SR*60/bpm)),speed=sample['rate']/SR*2**((midi-sample['recorded'])/12),gain=velocity*program[4]*10**(program[5]/20),attack=max(1,program[2]*SR),release=max(1,program[3]*SR),frequency=440*2**((midi-69)/12))
 
-def prepare(instruments,assets,catalog,revision,drum_index,bpm=69,seed=1042,line_index=0):
+def prepare(instruments,assets,catalog,revision,drum_index,bpm=69,seed=1042,line_index=0,archive=None):
     rng=random.Random(seed+revision*617);harmony=random.Random(seed+145)
     tonic=harmony.choice((0,2,3,5,7,9));scale=harmony.choice(SCALES)
     pitches=[p for p in range(53,73) if (p-tonic)%12 in scale]
@@ -99,19 +99,20 @@ def prepare(instruments,assets,catalog,revision,drum_index,bpm=69,seed=1042,line
             else:events.append(instruments.event(3,midi,offset+start,end-start,.52,padprogram,bpm))
     # Offline film bed and exact acoustic chops; decoded/prepared outside audio thread.
     film_path=Path(assets)/'film.wav';banks=[pcm];film_credit=''
-    if film_path.exists():
-        film,filmrate=read_pcm(film_path);banks.append(film)
+    if archive or film_path.exists():
+        film,filmrate=(archive['pcm'],SR) if archive else read_pcm(film_path);banks.append(film)
         events.append(dict(frame=0,channel=5,sample=-2,gate=length,speed=filmrate/SR,gain=.16,attack=SR*.4,release=SR*.4))
         chop_frames=min(round(SR*.55),len(film)//2//8)
         for i in range(8):
             line_start=round(line_index*8*SR)
-            start=min(len(film)//2-chop_frames,line_start+round(i*.8*SR));cut=array.array('f',film[start*2:(start+chop_frames)*2]);banks.append(cut)
-            events.append(dict(frame=round((8+i*7)*SR*60/bpm),channel=4,sample=-(i+3),gate=chop_frames,speed=1,gain=.35,attack=128,release=256))
-        banks.append(array.array('f',film[round(line_index*8*SR)*2:round((line_index+1)*8*SR)*2]));film_credit='film.json'
+            start,cut_length=archive['cuts'][i] if archive else (min(len(film)//2-chop_frames,line_start+round(i*.8*SR)),chop_frames)
+            cut=array.array('f',film[start*2:(start+cut_length)*2]);banks.append(cut)
+            events.append(dict(frame=round((8+i*7)*SR*60/bpm),channel=4,sample=-(i+3),gate=cut_length,speed=1,gain=.35,attack=128,release=256))
+        banks.append(array.array('f',film[:8*SR*2] if archive else film[round(line_index*8*SR)*2:round((line_index+1)*8*SR)*2]));film_credit=archive['credit'] if archive else 'film.json'
     # Four deterministic manual drum cuts, same PCM every trigger.
     drumcuts=[]
     for beat in (0,1,2,3):
         start=round(beat*len(pcm)/2/64);end=min(len(pcm)//2,start+round(SR*.45))
         drumcuts.append(len(banks));banks.append(array.array('f',pcm[start*2:end*2]))
     events.sort(key=lambda e:(e['frame'],e['channel'],e['sample']))
-    return dict(length=length,revision=revision,events=events,pcm=banks,drum=drum_index,bpm=bpm,programs=programs,pad=('Held '+piano[0],piano[1],.35,.85,.30,0),bass=bassprogram,tonic=tonic,scale=scale,film_credit=film_credit,drumcuts=drumcuts,line_index=line_index,anchor=10)
+    return dict(length=length,revision=revision,events=events,pcm=banks,drum=drum_index,bpm=bpm,programs=programs,pad=('Held '+piano[0],piano[1],.35,.85,.30,0),bass=bassprogram,tonic=tonic,scale=scale,film_credit=film_credit,drumcuts=drumcuts,line_index=line_index,anchor=10,archive_id=archive['credit']['sha256'] if archive else '',cuts=list(archive['cuts']) if archive else [(round((line_index*8+i*.8)*SR),chop_frames) for i in range(8)] if film_path.exists() else [])

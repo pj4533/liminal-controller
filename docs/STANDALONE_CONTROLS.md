@@ -36,3 +36,30 @@ All six sound channels remain playable; instrument, drum and chop metadata chang
 coherently at16-bar boundaries. NEXT READY means a native bank was accepted;
 PREPARING/REPEATING CURRENT disclose unprepared work. Display frame counters
 measure transfers; they do not claim visible hardware hues or audible output.
+
+Live archive audio (standalone-native live sourcing update):
+
+- With Chops or Film selected, Repeat56 requests a fresh public-domain Prelinger
+  source from Internet Archive. A serial background worker also requests material
+  every180seconds. Network and decoding continue while the instrument plays.
+  IA LOADING/DOWNLOADING/DECODING/READY or ERROR appears along the bottom;
+  NEXT16 means a source is waiting for the next64-beat boundary.
+- Select Chops (top5 / CC106), Shift+lower5 to Manual. Pads repeat eight
+  suggested cuts; each onset plays the current prepared film PCM immediately.
+  Shift+pad selects a cut silently. In Device/Note view, encoder6 changes Start,
+  encoder7 Length, encoder8 selects cut1–8. Start/length steps are50ms per tick;
+  hold Shift for5ms. Editing is audible on the next pad trigger immediately.
+  Edits also enter the next automatic bank; previously sounding voices retain
+  their onset start/length. Cuts persist across takes using the same source.
+- Film pads still audition the prepared anchor (up to8seconds). Film view exposes
+  the same chop editors; use Chops pads to audition those edits. Delete releases
+  manual voices; Stop hushes everything. Source changes still happen at16bars,
+  so press Play to advance a newly queued source when transport is stopped.
+
+These are energy/silence suggestions and hands-on PCM start/length editing.
+There is no transcription, semantic dialogue search, moving-video display or
+claim that every suggested cut contains speech. Only explicitly public-domain
+Prelinger metadata with a bounded audio/media derivative is eligible. Requests
+can fail or take minutes; the active source continues playing. Three decoded
+windows are cached on disk; the latest valid window is restored after reboot.
+The original bundled film remains the immediate offline boot fallback.

@@ -12,6 +12,7 @@ from display_worker import DisplayWorker
 from sampler import Sampler
 from standalone import Instrument
 from image_worker import ImageWorker
+from archive_worker import ArchiveWorker
 from standalone_render import Background,render
 from standalone_render import write_ppm
 
@@ -27,12 +28,13 @@ def main():
         nonlocal alive
         alive=False
     signal.signal(signal.SIGTERM,stop);signal.signal(signal.SIGINT,stop)
-    engine=Sampler(a.engine or a.home/'engine.so');ui=None;media=None;display=midi=None;ready=a.home/'ready.json';frame=None;last=0;leds={};controls={};started=time.monotonic()
+    engine=Sampler(a.engine or a.home/'engine.so');ui=None;media=None;archive=None;display=midi=None;ready=a.home/'ready.json';frame=None;last=0;leds={};controls={};started=time.monotonic()
     try:
-        ui=Instrument(engine,a.assets or a.home/'private-assets',a.home);background=Background(a.assets or a.home/'private-assets',blender=engine.blend)
+        archive=ArchiveWorker(a.home) if not a.simulate else None
+        ui=Instrument(engine,a.assets or a.home/'private-assets',a.home,archive);background=Background(a.assets or a.home/'private-assets',blender=engine.blend)
         started=time.monotonic();last_media=started
         if not a.simulate:
-            media=ImageWorker(a.home)
+            media=ImageWorker(a.home);archive.request();last_archive=time.monotonic()
             from hardware import Midi
             midi=Midi();display=DisplayWorker();engine.start()
         while alive and (a.seconds is None or time.monotonic()-started<a.seconds):
@@ -44,6 +46,8 @@ def main():
             status=ui.tick()
             if not a.simulate and not status['alive']:raise RuntimeError('Audio thread stopped')
             now=time.monotonic()
+            if archive and now-last_archive>=180:
+                archive.request();last_archive=now
             if media:
                 result=media.poll()
                 if result:background.update(*result)
@@ -58,7 +62,7 @@ def main():
                     for ch in range(6):buttons[102+ch]=127 if ch==ui.selected else 30;buttons[20+ch]=0 if ui.muted[ch] else (90 if ui.manual[ch] else 20)
                     for n,v in buttons.items():
                         if controls.get(n)!=v and midi.cc(n,v):controls[n]=v
-                status.update(pid=os.getpid(),ready=True,standalone=True,display_frames=display.frames if display else 0,next_ready=ui.next_slot is not None,preparing=ui.pending is not None,error=ui.error,image_worker_error=media.error if media else '',monotonic=now,revision=ui.current['revision'],drum=ui.current['drum'])
+                status.update(pid=os.getpid(),ready=True,standalone=True,display_frames=display.frames if display else 0,next_ready=ui.next_slot is not None,preparing=ui.pending is not None,error=ui.error,image_worker_error=media.error if media else '',monotonic=now,archive_state=archive.state if archive else 'OFFLINE',archive_error=archive.error if archive else '',archive_credit=ui.current['film_credit'],archive_queued=bool(ui.archive and ui.archive['credit']['sha256']!=ui.current['archive_id']),revision=ui.current['revision'],drum=ui.current['drum'])
                 tmp=ready.with_suffix('.tmp');tmp.write_text(json.dumps(status));os.replace(tmp,ready);last=now
             time.sleep(.002)
         if a.screenshot and frame:write_ppm(a.screenshot,frame)
@@ -66,6 +70,7 @@ def main():
         try:
             engine.command(2)
             if media:media.close()
+            if archive:archive.close()
             if ui:ui.close()
             engine.close()
             if midi:
