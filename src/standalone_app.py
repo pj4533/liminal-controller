@@ -63,14 +63,16 @@ def main():
             time.sleep(.002)
         if a.screenshot and frame:write_ppm(a.screenshot,frame)
     finally:
-        engine.command(2)
-        if media:media.close()
-        if ui:ui.close()
-        engine.close()
-        if midi:
-            for n in range(36,100):midi.note(n,0)
-            midi.close()
-        if display:display.close()
-        ready.unlink(missing_ok=True)
+        try:
+            engine.command(2)
+            if media:media.close()
+            if ui:ui.close()
+            engine.close()
+            if midi:
+                for n in range(36,100):midi.note(n,0)
+                midi.close()
+            if display:display.close()
+        finally:
+            ready.unlink(missing_ok=True)
     return 0
 if __name__=='__main__':raise SystemExit(main())

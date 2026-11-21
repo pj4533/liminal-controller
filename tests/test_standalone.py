@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'src'))
-from sampler import Sampler,Event,Bank
+from sampler import Sampler,Event,Bank,Command
 from composition import Instruments,choose_drum
 from dialogue_ledger import DialogueLedger
 from standalone_render import Background
@@ -66,6 +66,26 @@ class NativeTests(unittest.TestCase):
         self.assertFalse(self.s.command(7,slot,99,identity=1,event=event));self.assertEqual(self.s.last_admission,-1)
         self.assertTrue(self.s.command(7,slot,0,identity=2,event=event));self.assertEqual(self.s.lib.lm_state(self.s.ptr,slot),2)
         self.s.render(1);self.assertEqual(self.s.status()['voices'],1)
+    def test_accepted_onset_survives_boundary_before_consumption(self):
+        # Model an audio block that already snapshotted write before this
+        # accepted command arrived. No live audio thread runs in this test.
+        class Sample(C.Structure):_fields_=[('pcm',C.c_void_p),('frames',C.c_int)]
+        class QueuePrefix(C.Structure):
+            _fields_=[('samples',Sample*256),('banks',Bank*4),('state',C.c_int*4),('queue',Command*1024),('read',C.c_uint),('write',C.c_uint)]
+        a=self.s.install(self.bank(length=64));self.s.command(3,2,1);self.s.command(1);self.s.render(64)
+        b=self.s.install(self.bank(1,length=64));self.s.render(0)
+        event=Event(channel=2,sample=0,gate=9000,speed=1,gain=.2,attack=8,release=32)
+        self.assertTrue(self.s.command(7,a,0,identity=71,event=event))
+        queue=QueuePrefix.from_address(self.s.ptr);published=queue.write;queue.write=queue.read
+        try:self.s.render(1)
+        finally:queue.write=published
+        self.assertEqual(self.s.status()['bank'],b);self.assertEqual(self.s.status()['voices'],0)
+        self.assertEqual(self.s.lib.lm_state(self.s.ptr,a),2)
+        out=self.s.render(64);self.assertEqual(self.s.status()['voices'],1)
+        self.assertGreater(max(map(abs,out)),1e-5)
+        self.assertFalse(self.s.command(7,a,0,identity=72,event=event))
+        self.s.command(8,identity=71);self.s.render(40)
+        self.assertEqual(self.s.status()['voices'],0);self.assertEqual(self.s.lib.lm_state(self.s.ptr,a),0)
     def test_limiter_finite(self):
         self.s.install(self.bank());self.s.command(1);self.s.command(10,event=Event(gain=1));out=self.s.render(1024);self.assertTrue(all(math.isfinite(x) and abs(x)<1 for x in out))
     def test_future_and_retired_manual_sources_rejected(self):

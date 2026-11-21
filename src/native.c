@@ -91,7 +91,9 @@ static void commands(Engine *s){
    case 4:if(ch>=0&&ch<NC)s->level[ch]=fminf(1,fmaxf(0,c.event.gain));break;
    case 5:if(ch>=0&&ch<NC)s->muted[ch]=c.b;break;
    case 6:if(ch>=0&&ch<NB&&atomic_load(&s->state[ch])==1){atomic_store(&s->state[ch],2);if(s->current<0){s->current=ch;s->event=s->position=0;}else s->next=ch;}break;
-   case 7:if(c.a==s->current&&s->banks[c.a].revision==c.b&&c.event.channel>=0&&c.event.channel<NC&&s->manual[c.event.channel]){s->hush=0;note(s,c.event,c.a,c.id);}atomic_fetch_sub(&s->state[c.a],4);break;
+   /* Admission validated current/revision and pinned the onset's source. A
+      boundary after admission must not discard that already accepted note. */
+   case 7:if(c.event.channel>=0&&c.event.channel<NC&&s->manual[c.event.channel]){s->hush=0;note(s,c.event,c.a,c.id);}atomic_fetch_sub(&s->state[c.a],4);break;
    case 8:for(int i=0;i<NV;i++)if(s->voices[i].id==c.id)release(&s->voices[i]);break;
    case 9:for(int i=0;i<NV;i++)if(s->voices[i].id)release(&s->voices[i]);break;
    case 10:s->master=fminf(1,fmaxf(0,c.event.gain));break;
