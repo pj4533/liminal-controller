@@ -1,6 +1,6 @@
 # Standalone validation
 
-Playability correction (2026-11-21), pending hardware rollout/review:
+Playability correction (2026-11-21), implemented and deployed:
 strict native host and Zig0.13 x86_64 builds pass; host113tests pass, including
 12 focused regressions for Play toggle/queue order/hush, Stillwater default
 pitches/colors/chord triangle/octave limits, manual native events, drum impulse
@@ -18,11 +18,34 @@ multiplier, confirming level mismatch against drums normalized to.11.
 Source inspection and PCM isolation tests found separate Chops/Film channel
 routes sharing film PCM intentionally. Normalization cannot remove music or
 background sound already in that source. Manual remains fixed Stillwater D
-Dorian independently of automatic harmony. Device source/binary pairing,
-master-zero hardware checks and physical listening remain required after review.
+Dorian independently of automatic harmony. Actual deployment evidence follows;
+physical listening remains a human acceptance check.
 
 
-Live archive update on2026-11-21: deployed runtime
+Actual playability deployment (2026-11-21): live source
+**fad948f102b2f1981e2dabffba20ac340de10beb**, all279manifest files verified.
+Manifest SHA256 is
+`b989b0ca4c21e13269e3e4f135d56ea667bad79b7fa89a7d65b7260e5c0adabd`;
+paired x86_64 engine SHA256 is
+`4b11b37343625d1cbe681564b400b5ab1c553c3a506a8e2cdb14ad361cec473d`.
+Device113tests passed in2.324seconds. The isolated master-zero qualifier passed
+synthetic MIDI Play/Stop/Play and manual chop editing against real ALSA, direct
+IA download/decode/prepared PCM, cache retention under forced fetch failure,
+and Stop with zero voices/peak. It observed zero xrun delta and567displayframes.
+Qualification used its own writable ledger/cache; original music was preserved.
+
+After normal service restart,60.305seconds of fresh stopped readiness had no
+errors, next_ready=true, ALSA frames20225→2679809, written frames20128→2679790,
+display frames3→600 and xruns0→0. The application was the sole USB/MIDI/PCM
+owner. Recording inventory and session hashes passed preservation checks.
+A private checkpoint retains rollback source/native/state; its exact path and
+operational evidence are recorded in the existing private deployment handoff.
+No OS/init/recovery deployment or additional reboot was required for this change.
+These are synthetic controls and measured hardware progress; physical listening,
+button presses, pad feel and acoustic balance await PJ. Documentation commits
+afterfad948f do not change the live runtime.
+
+Historical live archive update on2026-11-21: deployed runtime
 **bc800b5ebc6a9ce5021be0f011fa7b317ce8e3fc**,279manifest hashes verified.
 Host101/101tests passed in2.161s; device101/101tests passed in2.136s. Strict native host/x86 builds pass. The final private
 library rehearsal again passed234checks with unchanged six-channel audio paths.
