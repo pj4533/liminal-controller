@@ -94,7 +94,8 @@ independently of the automatic arrangement key.
 Chops and Film intentionally share immutable film PCM; they have separate
 channel gain/mute/effects paths. Previously unnormalized .35 chop gain left
 quiet archive material below the normalized drum take. Preparation now computes
-per-cut foreground gain, bounded by16x and a .6 full-source peak ceiling. The
+per-cut foreground gain, bounded by16x and a .6 per-cut peak ceiling. The
 same gains feed Auto sliced PCM and Manual full-source offsets. Edited Manual
-ranges keep their cut gain; the full-source ceiling protects louder edits. No
+ranges recalculate their gain on the control thread; the per-cut ceiling
+protects louder edits. No
 new audio-thread analysis, allocation or PCM rewrite is introduced.

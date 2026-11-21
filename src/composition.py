@@ -109,13 +109,12 @@ def prepare(instruments,assets,catalog,revision,drum_index,bpm=69,seed=1042,line
     film_path=Path(assets)/'film.wav';banks=[pcm];film_credit='';chop_gains=[]
     if archive or film_path.exists():
         film,filmrate=(archive['pcm'],SR) if archive else read_pcm(film_path);banks.append(film)
-        source_ceiling=.6/max(1e-6,max(map(abs,film),default=0))
         events.append(dict(frame=0,channel=5,sample=-2,gate=length,speed=filmrate/SR,gain=.16,attack=SR*.4,release=SR*.4))
         chop_frames=min(round(SR*.55),len(film)//2//8)
         for i in range(8):
             line_start=round(line_index*8*SR)
             start,cut_length=archive['cuts'][i] if archive else (min(len(film)//2-chop_frames,line_start+round(i*.8*SR)),chop_frames)
-            cut=array.array('f',film[start*2:(start+cut_length)*2]);banks.append(cut);chop_gains.append(min(source_ceiling,chop_gain(cut)))
+            cut=array.array('f',film[start*2:(start+cut_length)*2]);banks.append(cut);chop_gains.append(chop_gain(cut))
             events.append(dict(frame=round((8+i*7)*SR*60/bpm),channel=4,sample=-(i+3),gate=cut_length,speed=1,gain=chop_gains[-1],attack=128,release=256))
         banks.append(array.array('f',film[:8*SR*2] if archive else film[round(line_index*8*SR)*2:round((line_index+1)*8*SR)*2]));film_credit=archive['credit'] if archive else 'film.json'
     # Four deterministic manual drum cuts, same PCM every trigger.

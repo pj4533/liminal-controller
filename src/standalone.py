@@ -3,7 +3,7 @@ import concurrent.futures
 import json
 from pathlib import Path
 import random
-from composition import Instruments,prepare,choose_drum,SR
+from composition import Instruments,prepare,choose_drum,chop_gain,SR
 from sampler import Event
 from dialogue_ledger import DialogueLedger
 NAMES=('DRUMS','BASS','LEAD','MIDS','CHOPS','FILM')
@@ -22,7 +22,7 @@ class Instrument:
         self.settings=False;self.recovery_target=None;self.recovery_request=None;self.help=False;self.selected=0;self.shift=False;self.mix=False;self.manual=[False]*6;self.muted=[False]*6
         self.level=[.65]*6;self.effects=[[.55,0,0,0]]+[[.55,.12,.10,0] for _ in range(5)];self.master=.45;self.octave=0
         self.held={};self.identity=0;self.next_revision=1;self.error='';self.pending=None;self.last_bank=-1;self.next_slot=None;self.queued_drum=None;self.drum_page=0
-        self.archive_worker=archive_worker;self.archive=None;self.archive_dirty=False;self.chop=0;self.edits={};self.archive_started=0
+        self.archive_worker=archive_worker;self.archive=None;self.archive_dirty=False;self.chop=0;self.edits={};self.edit_gains={};self.archive_started=0
         self.pool=concurrent.futures.ThreadPoolExecutor(max_workers=1,thread_name_prefix='prepare')
         first=min(range(len(self.catalog)),key=lambda i:abs(self.catalog[i]['bpm']-69))
         bank=prepare(self.instruments,self.assets,self.catalog,0,first,line_index=self.ledger.choose())
@@ -47,7 +47,7 @@ class Instrument:
             prepared=self.engine.banks[bank][1];text='' if prepared['archive_id'] else self.ledger.commit(prepared['line_index'],prepared['revision'])
             if text:self.pool.submit(self.ledger.save,text)
         if bank>=0 and bank!=self.last_bank:
-            self.last_bank=bank;self.edits={k:v for k,v in self.edits.items() if k[0]==self.cut_source(self.current)};self.next_slot=None;self.request_next()
+            self.last_bank=bank;self.edits={k:v for k,v in self.edits.items() if k[0]==self.cut_source(self.current)};self.edit_gains={k:v for k,v in self.edit_gains.items() if k[0]==self.cut_source(self.current)};self.next_slot=None;self.request_next()
         if self.pending is not None and self.pending.done():
             try:
                 prepared=self.pending.result()
@@ -95,7 +95,7 @@ class Instrument:
                 if ch==0:local=bank['drumcuts'][pad%4];gain=bank['events'][0]['gain']*.9
                 elif ch==4:
                     if len(bank['pcm'])<10:return
-                    local=2+pad%8;gain=bank['chop_gains'][pad%8]
+                    local=2+pad%8;gain=self.edit_gains.get((self.cut_source(bank),pad%8),bank['chop_gains'][pad%8])
                 else:
                     if len(bank['pcm'])<10:return
                     local=bank['anchor'];gain=.25
@@ -127,7 +127,12 @@ class Instrument:
                     step=round(SR*(.005 if self.shift else .05))*delta
                     if knob==5:start=max(0,min(total-length,start+step))
                     else:length=max(SR//20,min(total-start,length+step))
-                    self.edits[(self.cut_source(self.current),self.chop)]=(start,length)
+                    key=(self.cut_source(self.current),self.chop)
+                    self.edits[key]=(start,length)
+                    # Control-thread analysis: the next pad uses the edited range,
+                    # including a formerly silent suggestion moved onto speech.
+                    pcm=self.current['pcm'][1]
+                    self.edit_gains[key]=chop_gain(pcm[start*2:(start+length)*2])
                     if self.archive and self.current['archive_id']==self.archive['credit']['sha256']:
                         self.archive=dict(self.archive,cuts=list(self.archive['cuts']));self.archive['cuts'][self.chop]=(start,length);self.archive_dirty=True
                 return
@@ -150,9 +155,7 @@ class Instrument:
             ch=number-20
             if self.shift:self.toggle_mode(ch)
             else:self.muted[ch]=not self.muted[ch];self.send(5,ch,int(self.muted[ch]))
-        elif number==85:
-            self.send(15)
-            if self.engine.status()['playing']:self.held.clear()
+        elif number==85:self.send(15)
         elif number==29:self.send(2);self.held.clear()
         elif number==118:self.send(9);self.held.clear()
         elif number==112:self.mix=True

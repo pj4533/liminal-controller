@@ -1,13 +1,15 @@
 # Standalone validation
 
 Playability correction (2026-11-21), pending hardware rollout/review:
-strict native host and Zig0.13 x86_64 builds pass; host111tests pass, including
-10 focused regressions for Play toggle/queue order/hush, Stillwater default
+strict native host and Zig0.13 x86_64 builds pass; host113tests pass, including
+12 focused regressions for Play toggle/queue order/hush, Stillwater default
 pitches/colors/chord triangle/octave limits, manual native events, drum impulse
 tail silence, bounded foreground gain, exact Auto/Manual chop PCM equality and
-Chops/Film channel/source isolation. Private-library rehearsal passes234checks.
-The same offline-source Auto Chops render rises from RMS.00045764 to.00461615
-(20.1dB); Film stays.00108610. Dry drums are.02713861. These are isolated
+Chops/Film channel/source isolation. Review regressions force native Start
+consumption before control dispatch returns and move initially silent cuts onto
+speech, then louder PCM, for both offline and live source identities. Private-library rehearsal passes234checks.
+The same offline-source Auto Chops render rises from RMS.00045764 to.00504492
+(20.8dB); Film stays.00108610. Dry drums are.02713861. These are isolated
 native memory-render measurements, not listening or physical pad evidence.
 Live device was inspected read-only before rollout: expectedbc800b5 source,
 stopped, ready, no error/overflow, one historical xrun and no log text.

@@ -71,5 +71,5 @@ Room can still be added deliberately. Each chop has bounded foreground gain
 (target .11 source RMS, peak ceiling .6, maximum16x gain), shared by Auto and
 Manual. Film remains the quiet full source at .16 gain. Both use the same film
 recording; chopping does not isolate speech from its original soundtrack.
-Edited manual cuts retain the selected cut gain, bounded against the full-source
-peak; publishing a newly prepared bank recalibrates its suggested cuts.
+Editing a manual cut recalculates its gain on the control thread for the new
+range, with the same .6 peak ceiling.

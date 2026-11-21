@@ -61,9 +61,9 @@ def main():
         memory=Sampler(home/'engine.so')
         try:
             slot=memory.install(dict(revision=0,length=640,pcm=[ui.archive['pcm']],events=[]));memory.render(1);memory.command(3,4,1)
-            memory.command(7,slot,0,identity=1,event=Event(frame=after[0],channel=4,sample=192+slot*16,gate=after[1],speed=1,gain=ui.current['chop_gains'][2],attack=128,release=256))
+            memory.command(7,slot,0,identity=1,event=Event(frame=after[0],channel=4,sample=192+slot*16,gate=after[1],speed=1,gain=ui.edit_gains.get((ui.cut_source(ui.current),2),ui.current['chop_gains'][2]),attack=128,release=256))
             data=memory.render(min(SR*4,after[1]+512));peak=max(map(abs,data));rms=math.sqrt(sum(v*v for v in data)/len(data));assert peak>1e-5 and rms>1e-6
-            report['downloaded_chop_memory_audio']={'peak':peak,'rms':rms,'gain':ui.current['chop_gains'][2],'frames':len(data)//2,'finite':all(math.isfinite(v) for v in data)}
+            report['downloaded_chop_memory_audio']={'peak':peak,'rms':rms,'gain':ui.edit_gains.get((ui.cut_source(ui.current),2),ui.current['chop_gains'][2]),'frames':len(data)//2,'finite':all(math.isfinite(v) for v in data)}
         finally:memory.close()
         # Memory-render/signal measurement deliberately pauses this harness.
         # Exclude that harness-only gap from the MIDI polling distribution.

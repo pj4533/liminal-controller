@@ -16,11 +16,11 @@ class PlayabilityTests(unittest.TestCase):
         self.engine=Sampler(ROOT/'.build/engine.so')
     def tearDown(self):self.engine.close()
     def ui(self):
-        ui=Instrument.__new__(Instrument);ui.engine=self.engine;ui.settings=False;ui.shift=False;ui.held={};ui.identity=0;ui.selected=4;ui.manual=[True]*6;ui.octave=0;ui.chop=0;ui.edits={};ui.catalog=[];ui.drum_page=0
+        ui=Instrument.__new__(Instrument);ui.engine=self.engine;ui.last_bank=self.engine.status()['bank'];ui.settings=False;ui.shift=False;ui.held={};ui.identity=0;ui.selected=4;ui.manual=[True]*6;ui.octave=0;ui.chop=0;ui.edits={};ui.edit_gains={};ui.mix=False;ui.archive=None;ui.catalog=[];ui.drum_page=0
         return ui
     def event(self,ui,number,kind='cc',value=127):ui.event(dict(kind=kind,number=number,value=value))
     def bank(self,pcm,events=None,**kwargs):
-        bank=dict(revision=0,length=SR*3,bpm=69,pcm=pcm,events=events or [],archive_id='fixture',line_index=0,cuts=[(SR//2,SR//4)]*8,chop_gains=[1]*8)
+        bank=dict(revision=0,length=SR*3,bpm=69,pcm=pcm,events=events or [],archive_id='fixture',line_index=0,cuts=[(SR//2,SR//4)]*8,chop_gains=[1]*8,chop_ceiling=.6)
         bank.update(kwargs);slot=self.engine.install(bank);self.engine.render(1);return slot
     def test_physical_play_toggles_and_hushes_tails(self):
         self.bank([array.array('f',[.2,.2])*SR],[dict(frame=0,channel=0,sample=-1,gate=SR,speed=1,gain=1,attack=8,release=32)])
@@ -36,6 +36,32 @@ class PlayabilityTests(unittest.TestCase):
         self.bank([array.array('f',[.2,.2])*SR]);ui=self.ui();ui.held={36:99}
         self.event(ui,85);self.assertEqual(ui.held,{36:99})
         self.event(ui,36,'note_off',0);self.assertFalse(ui.held)
+    def test_start_consumed_before_command_return_keeps_release_token(self):
+        slot=self.bank([array.array('f',[.2,.2])*SR]);ui=self.ui();ui.selected=2
+        self.engine.command(3,2,1)
+        self.engine.command(7,slot,0,identity=99,event=Event(channel=2,sample=192,gate=SR*10,speed=1,gain=.2,attack=8,release=32))
+        self.engine.render(1);ui.held={36:99}
+        command=self.engine.command
+        def consume(*args,**kwargs):
+            accepted=command(*args,**kwargs);self.engine.render(1);return accepted
+        with patch.object(self.engine,'command',side_effect=consume):self.event(ui,85)
+        self.assertTrue(self.engine.status()['playing']);self.assertEqual(ui.held,{36:99})
+        self.event(ui,36,'note_off',0);self.engine.render(64)
+        self.assertEqual(self.engine.status()['voices'],0)
+
+    def test_edit_silent_cut_to_speech_relevels_and_caps_louder_edits(self):
+        for archive_id in ('fixture',''):
+            with self.subTest(archive_id=archive_id):
+                self.engine.close();self.engine=Sampler(ROOT/'.build/engine.so')
+                source=array.array('f',[0,0])*(SR//20)+array.array('f',[.012,-.012])*(SR//20)+array.array('f',[.8,-.8])*(SR//20)
+                self.bank([source,source]+[array.array('f',[0,0])*100]*8,archive_id=archive_id,cuts=[(0,SR//20)]*8,chop_gains=[0]*8,chop_ceiling=.75)
+                ui=self.ui();self.engine.command(3,4,1)
+                self.event(ui,36,'note',96);self.assertEqual(max(map(abs,self.engine.render(4096))),0)
+                self.event(ui,76,value=1);self.assertGreater(ui.edit_gains[(ui.cut_source(ui.current),0)],4)
+                self.event(ui,36,'note',96);self.assertGreater(max(map(abs,self.engine.render(4096))),.0001)
+                self.event(ui,76,value=1)
+                self.assertLessEqual(ui.edit_gains[(ui.cut_source(ui.current),0)]*.8,.6+1e-6)
+
     def test_stillwater_exact_default_all_pitches_and_colors(self):
         ui=self.ui()
         for ch in (1,2,3):
