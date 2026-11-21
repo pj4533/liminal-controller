@@ -43,6 +43,12 @@ class ArchiveTests(unittest.TestCase):
             w.request();w.thread.join(3);self.assertIn('ERROR',w.state);self.assertIsNone(w.poll());self.assertTrue(list((Path(t)/'archive-cache').glob('window-*.f32')));w.close()
             cached=ArchiveWorker(t,fetcher=lambda *_:self.fail('cache restore must work offline'));cached.request();cached.thread.join(3)
             self.assertEqual(cached.state,'CACHED READY');self.assertEqual(cached.poll()['credit']['sha256'],result['credit']['sha256']);cached.close()
+    def test_close_prevents_late_decoder_spawn(self):
+        with tempfile.TemporaryDirectory() as t:
+            worker=ArchiveWorker(t);worker.close()
+            with patch('archive_worker.subprocess.Popen') as spawn:
+                with self.assertRaises(RuntimeError):worker.decode(Path(t)/'source',0,Path(t)/'target')
+                spawn.assert_not_called()
     def test_single_worker_and_unconsumed_result_bound(self):
         w=ArchiveWorker('/tmp/unused');w.results.put({});self.assertFalse(w.request());w.close()
     def test_manual_source_offset_changes_pcm(self):

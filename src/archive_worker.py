@@ -50,7 +50,7 @@ def chops(pcm):
 class ArchiveWorker:
     def __init__(self,home,fetcher=None):
         self.home=Path(home);self.fetcher=fetcher;self.results=queue.Queue(maxsize=1)
-        self.closed=threading.Event();self.thread=None;self.process=None;self.state='CACHED';self.error='';self.credit={};self.last_request=0;self.seen=[];self.serial=0;self.restored=False
+        self.closed=threading.Event();self.thread=None;self.process=None;self.process_lock=threading.Lock();self.state='CACHED';self.error='';self.credit={};self.last_request=0;self.seen=[];self.serial=0;self.restored=False
     def fetch(self,url,limit):
         if not url.startswith('https://archive.org/'):raise ValueError('IA HTTPS required')
         if self.fetcher:return self.fetcher(url,limit)
@@ -75,7 +75,9 @@ class ArchiveWorker:
         cmd=[str(self.home/'tools/ffmpeg')];loader=Path('/lib/ld-linux-x86-64.so.2')
         if platform.machine()=='x86_64' and loader.exists():cmd=[str(loader)]+cmd
         args=cmd+['-v','error','-nostdin','-y','-threads','1','-ss',str(start),'-i',str(path),'-t',str(SECONDS),'-vn','-ac','2','-ar',str(SR),'-af','highpass=f=180,lowpass=f=4600','-f','f32le',str(target)]
-        self.process=subprocess.Popen(args,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        with self.process_lock:
+            if self.closed.is_set():raise RuntimeError('Closed')
+            self.process=subprocess.Popen(args,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
         try:code=self.process.wait(timeout=30)
         except subprocess.TimeoutExpired:self.process.kill();self.process.wait();raise ValueError('Archive decode timeout')
         if code:raise ValueError('Archive decode failed')
@@ -118,6 +120,7 @@ class ArchiveWorker:
                     start=round(random.uniform(5,max(5,duration-SECONDS-1)),2)
                     self.state='DECODING';pcm=self.decode(source,start,decoded);cuts=chops(pcm)
                     credit=dict(identifier=identifier,title=str(m.get('title',identifier)),license=m.get('licenseurl'),page='https://archive.org/details/'+identifier,metadata=metadata_url,download=download,original_sha256=digest,start_seconds=start,duration_seconds=len(pcm)/2/SR,sha256=hashlib.sha256(pcm.tobytes()).hexdigest(),cuts=cuts,policy='Public-domain Prelinger; energy/silence suggestions, editable; no transcription')
+                    if self.closed.is_set():return
                     self.serial+=1;slot=self.serial%3;target=cache/('window-%d.f32'%slot);os.replace(decoded,target)
                     meta=target.with_suffix('.json');tmp=meta.with_suffix('.tmp');tmp.write_text(json.dumps(credit));os.replace(tmp,meta)
                     self.credit=credit;self.seen=(self.seen+[identifier])[-30:];self.results.put_nowait(dict(pcm=pcm,credit=credit,cuts=cuts));self.state='READY';self.error='';return
@@ -131,8 +134,9 @@ class ArchiveWorker:
         except queue.Empty:return None
     def close(self):
         self.closed.set()
-        if self.process and self.process.poll() is None:
-            self.process.terminate()
-            try:self.process.wait(timeout=1)
-            except subprocess.TimeoutExpired:self.process.kill();self.process.wait()
+        with self.process_lock:
+            if self.process and self.process.poll() is None:
+                self.process.terminate()
+                try:self.process.wait(timeout=1)
+                except subprocess.TimeoutExpired:self.process.kill();self.process.wait()
         if self.thread:self.thread.join(timeout=1)
