@@ -12,13 +12,20 @@ python3 scripts/rehearse-standalone.py --assets /PRIVATE/assets --out /PRIVATE/e
 ZIG=/verified/zig-0.13.0/zig sh scripts/build-native.sh device
 ```
 
-The unit suite passes88tests, including43 inherited controller tests, native
+The unit suite passes93tests, including43 inherited controller tests, native
 PCM/mode/stop/boundary/held-release/queue/voice limits, queued-onset bank pins,
 source programme/sample policies, durable dialogue ledger, image cache failure,
 rights validation, five isolated install/recovery safety regressions and four
 display-worker lifetime/queue regressions. An accepted manual onset retains its
 pinned source across a boundary before command consumption; teardown failures
 still remove readiness. Both cases have deterministic regressions.
+
+Primary boot acknowledgement requires60seconds of fresh, ready audio/display
+progress with an unchanged xrun counter. A startup xrun may precede this settled
+window; any increase or unexpected decrease resets it. The receipt preserves
+baseline/final totals, their delta and the sustained interval. Five simulated
+clock tests cover settling, counter changes, readiness/freshness/errors and
+failure to advance; counters are never erased to satisfy acknowledgement.
 
 The private-library rehearsal passes234checks: all100 unique original drum
 hashes and64-beat durations,143 melodic instruments, deterministic events,

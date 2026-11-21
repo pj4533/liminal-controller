@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch,MagicMock
 
 ROOT=Path(__file__).resolve().parents[1]
 def load(name,file):
@@ -35,11 +35,40 @@ class DeploymentTests(unittest.TestCase):
             self.assertEqual(init.read_bytes(),b'unchanged')
     def test_boot_success_requires_audio_and_display_progress(self):
         module=load('boot_success','boot-success.py')
-        base=dict(written=100,display_frames=10)
+        base=dict(written=100,display_frames=10,xruns=0)
         current=dict(pid=42,ready=True,alive=True,written=200,display_frames=12,xruns=0,error='')
         self.assertTrue(module.healthy(base,current,42))
         for field,value in (('pid',43),('written',100),('display_frames',10),('xruns',1),('error','bad')):
             changed=dict(current);changed[field]=value;self.assertFalse(module.healthy(base,changed,42))
+    def boot_window(self,changes):
+        module=load('boot_success_window','boot-success.py');clock=[100.0];home=MagicMock()
+        def snapshot():
+            elapsed=clock[0]-100
+            current=dict(pid=42,ready=True,alive=True,written=int(elapsed*44100)+100,display_frames=int(elapsed*10)+10,xruns=1,error='',monotonic=clock[0])
+            current.update(changes(elapsed));return json.dumps(current)
+        home.__truediv__.return_value.read_text.side_effect=snapshot
+        def sleep(seconds):clock[0]+=seconds
+        with patch.object(module.time,'monotonic',side_effect=lambda:clock[0]),patch.object(module.time,'sleep',side_effect=sleep):
+            result=module.wait_ready(home,42)
+        return result,clock[0]-100
+    def test_boot_accepts_clean_window_after_startup_xrun(self):
+        (base,final,elapsed),wall=self.boot_window(lambda _: {})
+        self.assertEqual((base['xruns'],final['xruns']),(1,1));self.assertEqual(elapsed,60);self.assertEqual(wall,60)
+    def test_boot_xrun_increment_or_decrease_restarts_window(self):
+        for count in (0,2):
+            with self.subTest(count=count):
+                (base,final,elapsed),wall=self.boot_window(lambda t:dict(xruns=count) if t>=10 else {})
+                self.assertEqual((base['xruns'],final['xruns']),(count,count));self.assertEqual(elapsed,60);self.assertGreaterEqual(wall,70.5)
+    def test_boot_rejects_unready_stale_errors_and_nonadvancing_counters(self):
+        for change in (dict(ready=False),dict(alive=False),dict(pid=43),dict(error='bad'),dict(monotonic=1),dict(written=100),dict(display_frames=10)):
+            with self.subTest(change=change),self.assertRaisesRegex(RuntimeError,'readiness timeout'):
+                self.boot_window(lambda _,change=change:change)
+    def test_boot_initial_unready_sample_does_not_start_window(self):
+        (_,_,elapsed),wall=self.boot_window(lambda t:dict(ready=False) if t<5 else {})
+        self.assertEqual(elapsed,60);self.assertEqual(wall,65)
+    def test_boot_repeated_xruns_never_complete_window(self):
+        with self.assertRaisesRegex(RuntimeError,'readiness timeout'):
+            self.boot_window(lambda t:dict(xruns=1+int(t//10)))
     def test_install_refuses_existing_recovery(self):
         module=load('installer','install-standalone.py')
         with tempfile.TemporaryDirectory() as t:
