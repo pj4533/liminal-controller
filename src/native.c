@@ -120,8 +120,10 @@ void lm_render(Engine *s,float *out,int count){
    Sample p=s->samples[v->e.sample];
    if(v->e.channel==3&&v->pos>p.frames*.75)v->pos=p.frames*.35+256;
    int j=(int)v->pos;
-   if(j+1>=p.frames){v->live=0;continue;}
-   if(!v->releasing&&v->age>=v->e.gate)release(v);
+   if(j+1>=p.frames||(v->id&&v->e.channel==4&&v->age>=v->e.gate)){v->live=0;continue;}
+   int gate=v->e.gate;
+   if(v->id&&v->e.channel==4)gate=gate>(int)v->e.release?gate-(int)v->e.release:0;
+   if(!v->releasing&&v->age>=gate)release(v);
    if(v->releasing){v->env*=fmaxf(0,(float)(v->left-1)/fmaxf(1,v->left));if(--v->left<=0){v->live=0;continue;}}
    else v->env=fminf(1,(float)(v->age+1)/v->e.attack);
    float f=(float)(v->pos-j),gain=v->e.gain*v->env;

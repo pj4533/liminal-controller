@@ -55,6 +55,14 @@ class ArchiveTests(unittest.TestCase):
                 return max(map(abs,s.render(200)))
             finally:s.close()
         self.assertEqual(rendered(0),0);self.assertGreater(rendered(1100),.0005)
+    def test_manual_cut_never_reads_after_edited_end(self):
+        s=Sampler(ROOT/'.build/engine.so')
+        try:
+            pcm=array.array('f',[0,0])*500+array.array('f',[.8,-.8])*1000
+            slot=s.install(dict(revision=0,length=640,pcm=[pcm],events=[]));s.render(1);s.command(3,4,1)
+            s.command(7,slot,0,identity=1,event=Event(frame=250,channel=4,sample=192+slot*16,gate=250,speed=1,gain=.5,attack=8,release=256))
+            self.assertEqual(max(map(abs,s.render(1000))),0)
+        finally:s.close()
     def test_edit_controls_and_source_retention(self):
         ui=Instrument.__new__(Instrument);ui.settings=False;ui.selected=4;ui.shift=False;ui.mix=False;ui.chop=0;ui.edits={};ui.archive=None
         ui.engine=type('Engine',(),{'banks':{0:(None,dict(revision=1,archive_id='same',line_index=0,pcm=[[],array.array('f',[.1,.1])*SR*5],cuts=[(0,SR)]*8))}})();ui.last_bank=0
