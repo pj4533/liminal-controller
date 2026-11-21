@@ -61,6 +61,9 @@ def main():
             data=memory.render(min(SR*4,after[1]+512));peak=max(map(abs,data));rms=math.sqrt(sum(v*v for v in data)/len(data));assert peak>1e-5 and rms>1e-6
             report['downloaded_chop_memory_audio']={'peak':peak,'rms':rms,'frames':len(data)//2,'finite':all(math.isfinite(v) for v in data)}
         finally:memory.close()
+        # Memory-render/signal measurement deliberately pauses this harness.
+        # Exclude that harness-only gap from the MIDI polling distribution.
+        last=time.monotonic()
         # A failed subsequent fetch must not replace the active PCM or stop ALSA.
         identity=ui.current['archive_id'];oldfetch=worker.fetcher;worker.fetcher=lambda *_:(_ for _ in ()).throw(OSError('qualification offline'))
         while worker.thread and worker.thread.is_alive():pump(.05)

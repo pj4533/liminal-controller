@@ -39,7 +39,7 @@ measure transfers; they do not claim visible hardware hues or audible output.
 
 Live archive audio (standalone-native live sourcing update):
 
-- With Chops or Film selected, Repeat56 requests a fresh public-domain Prelinger
+- With Chops or Film selected, Repeat56 requests a fresh public-domain Prelinger newsreel
   source from Internet Archive. A serial background worker also requests material
   every180seconds. Network and decoding continue while the instrument plays.
   IA LOADING/DOWNLOADING/DECODING/READY or ERROR appears along the bottom;

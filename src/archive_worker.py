@@ -98,8 +98,8 @@ class ArchiveWorker:
                         pcm=array.array('f');pcm.frombytes(data);cuts=chops(pcm)
                         self.results.put_nowait(dict(pcm=pcm,credit=credit,cuts=cuts));self.credit=credit;self.seen=[credit['identifier']];self.state='CACHED READY';return
                     except (OSError,ValueError,KeyError):continue
-            query='collection:prelinger AND mediatype:movies AND (licenseurl:*publicdomain* OR licenseurl:*zero*)'
-            url='https://archive.org/advancedsearch.php?'+urllib.parse.urlencode({'q':query,'fl[]':'identifier','rows':50,'page':random.randint(1,4),'output':'json'})
+            query='collection:prelinger AND mediatype:movies AND subject:Newsreels AND (licenseurl:*publicdomain* OR licenseurl:*zero*)'
+            url='https://archive.org/advancedsearch.php?'+urllib.parse.urlencode({'q':query,'fl[]':'identifier','rows':25,'page':random.randint(1,3),'output':'json'})
             documents=json.loads(self.fetch(url,2000000))['response']['docs'];random.shuffle(documents)
             errors=[];deadline=time.monotonic()+150
             for record in documents[:5]:

@@ -44,7 +44,7 @@ master-finisher, virtual-record and spectral-hold chains and bass kick-landmark
 analysis. Soft limiting plus smoothed gains bound output. Taste, pad feel,
 acoustic balance and physical latency require actual device/human acceptance.
 
-`archive_worker.py` discovers public-domain Prelinger records through IA's
+`archive_worker.py` discovers public-domain Prelinger newsreel records through IA's
 advancedsearch endpoint, validates metadata and fetches a bounded derivative
 (prefer narration MP3; at most24MiB). One worker paces requests by2seconds,
 limits read/decode time, and decodes a48second stereo44.1kHz float PCM window
