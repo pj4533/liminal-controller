@@ -108,11 +108,14 @@ def main():
         if owner.competitors():raise RuntimeError('Previous hardware owner still alive; preserve registry')
         before=recordings();states=state_hashes()
         (checkpoint/'recordings-inventory.json').write_text(json.dumps(before,indent=2));(checkpoint/'sessions-hashes.json').write_text(json.dumps(states,indent=2))
-        # Full source/session/history/enabled checkpoint, excluding only large recordings.
+        historical=Path('/data/push-ambient/recovery')
+        inventory={str(p.relative_to(historical)):dict(size=p.stat().st_size,mtime_ns=p.stat().st_mtime_ns,inode=p.stat().st_ino) for p in sorted(historical.rglob('*')) if p.is_file()}
+        (checkpoint/'historical-recovery-inventory.json').write_text(json.dumps(inventory,indent=2))
+        # Checkpoint current source/state; preserve historical backups in place.
         with tarfile.open(checkpoint/'stillwater-core.tar.gz','w:gz',compresslevel=1) as backup:
             for path in sorted(Path('/data/push-ambient').rglob('*')):
                 relative=path.relative_to('/data/push-ambient')
-                if relative.parts[0]=='recordings' or not path.is_file() or path.is_symlink():continue
+                if relative.parts[0] in ('recordings','recovery') or not path.is_file() or path.is_symlink():continue
                 backup.add(path,arcname=str(relative),recursive=False)
         stage.rename(home)
         if a.qualify_only:
