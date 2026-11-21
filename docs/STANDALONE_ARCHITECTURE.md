@@ -58,7 +58,10 @@ first playable bank; expanding the offline film crate is future work.
 one-frame decode. Images never block music. Three real offline images ship
 privately, with source records/hashes. A six-slot disk cache and nine-image
 in-memory rotation bound future pictures; failures keep current cached imagery.
-The UI stays960x160 BGR565,1024stride, opaque controls/text drawn last,90seconds
+The display worker alone opens, transfers to and closes the USB display.
+Its one-frame pending queue replaces stale frames without blocking MIDI input;
+transfer errors propagate to the supervisor, and shutdown refuses a new owner
+while the old thread remains alive. The UI stays960x160 BGR565,1024stride, opaque controls/text drawn last,90seconds
 between pictures with an8second crossfade. No audio-reactive flashing.
 
 ALSA plumbing is adapted from Stillwater's MIT engine.c209–240: `hw:A3,0`,

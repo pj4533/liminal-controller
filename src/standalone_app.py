@@ -6,7 +6,9 @@ import json
 import os
 from pathlib import Path
 import signal
+import sys
 import time
+from display_worker import DisplayWorker
 from sampler import Sampler
 from standalone import Instrument
 from image_worker import ImageWorker
@@ -14,6 +16,7 @@ from standalone_render import Background,render
 from standalone_render import write_ppm
 
 def main():
+    sys.setswitchinterval(.001)
     p=argparse.ArgumentParser();p.add_argument('--home',type=Path,default=Path('/data/liminal'));p.add_argument('--assets',type=Path);p.add_argument('--engine',type=Path);p.add_argument('--start-fd',type=int);p.add_argument('--simulate',action='store_true');p.add_argument('--seconds',type=float);p.add_argument('--screenshot',type=Path);a=p.parse_args()
     if a.start_fd is not None:
         if os.read(a.start_fd,1)!=b'1':return 1
@@ -30,8 +33,8 @@ def main():
         started=time.monotonic();last_media=started
         if not a.simulate:
             media=ImageWorker(a.home)
-            from hardware import Display,Midi
-            midi=Midi();display=Display();engine.start()
+            from hardware import Midi
+            midi=Midi();display=DisplayWorker();engine.start()
         while alive and (a.seconds is None or time.monotonic()-started<a.seconds):
             if midi:
                 for event in midi.read():ui.event(event)
