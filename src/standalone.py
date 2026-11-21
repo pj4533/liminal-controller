@@ -7,6 +7,12 @@ from composition import Instruments,prepare,choose_drum,SR
 from sampler import Event
 from dialogue_ledger import DialogueLedger
 NAMES=('DRUMS','BASS','LEAD','MIDS','CHOPS','FILM')
+# Stillwater's default centered D Dorian grid and Silt hardware palette.
+MANUAL_SCALE=(0,2,3,5,7,9,10)
+def pad_pitch(number,octave=0):
+    degree=(number-36)%8+3*((number-36)//8)-14+7*octave
+    return 62+12*(degree//7)+MANUAL_SCALE[degree%7]
+
 class Instrument:
     def __init__(self,engine,assets,home=None,archive_worker=None):
         self.engine=engine;self.assets=Path(assets);self.catalog=json.loads((self.assets/'drums.json').read_text())
@@ -14,7 +20,7 @@ class Instrument:
         self.ledger=DialogueLedger(Path(home or assets)/'dialogue-lines.json',film.get('sha256','no-film'))
         self.instruments=Instruments(self.assets/'instruments',engine)
         self.settings=False;self.recovery_target=None;self.recovery_request=None;self.help=False;self.selected=0;self.shift=False;self.mix=False;self.manual=[False]*6;self.muted=[False]*6
-        self.level=[.65]*6;self.effects=[[.55,.12,.10,0] for _ in range(6)];self.master=.45;self.octave=0
+        self.level=[.65]*6;self.effects=[[.55,0,0,0]]+[[.55,.12,.10,0] for _ in range(5)];self.master=.45;self.octave=0
         self.held={};self.identity=0;self.next_revision=1;self.error='';self.pending=None;self.last_bank=-1;self.next_slot=None;self.queued_drum=None;self.drum_page=0
         self.archive_worker=archive_worker;self.archive=None;self.archive_dirty=False;self.chop=0;self.edits={};self.archive_started=0
         self.pool=concurrent.futures.ThreadPoolExecutor(max_workers=1,thread_name_prefix='prepare')
@@ -89,7 +95,7 @@ class Instrument:
                 if ch==0:local=bank['drumcuts'][pad%4];gain=bank['events'][0]['gain']*.9
                 elif ch==4:
                     if len(bank['pcm'])<10:return
-                    local=2+pad%8;gain=.35
+                    local=2+pad%8;gain=bank['chop_gains'][pad%8]
                 else:
                     if len(bank['pcm'])<10:return
                     local=bank['anchor'];gain=.25
@@ -101,8 +107,7 @@ class Instrument:
                 if not self.onset(slot,bank['revision'],identity,event):return
                 if ch==0:self.held[number]=identity
             else:
-                degree=pad%8+3*(pad//8);scale=bank['scale'];base=(36 if ch==1 else 48)+bank['tonic']+self.octave*12
-                midi=base+12*(degree//len(scale))+scale[degree%len(scale)]
+                midi=pad_pitch(number,self.octave)
                 program=bank['bass'] if ch==1 else (bank['pad'] if ch==3 else bank['programs'][0])
                 values=self.instruments.event(ch,midi,0,120,value/127,program,bank['bpm']);values['gate']=SR*120
                 if self.onset(slot,bank['revision'],identity,Event(**values)):self.held[number]=identity
@@ -145,7 +150,9 @@ class Instrument:
             ch=number-20
             if self.shift:self.toggle_mode(ch)
             else:self.muted[ch]=not self.muted[ch];self.send(5,ch,int(self.muted[ch]))
-        elif number==85:self.send(1)
+        elif number==85:
+            self.send(15)
+            if self.engine.status()['playing']:self.held.clear()
         elif number==29:self.send(2);self.held.clear()
         elif number==118:self.send(9);self.held.clear()
         elif number==112:self.mix=True
@@ -155,15 +162,16 @@ class Instrument:
         elif number in (62,63):
             if self.selected==0:self.drum_page=1-self.drum_page
             else:
-                candidate=max(-2,min(2,self.octave+(-1 if number==62 else 1)))
-                base=(36 if self.selected==1 else 48)+self.current['tonic']+candidate*12
-                scale=self.current['scale'];top=base+12*(28//len(scale))+scale[28%len(scale)]
-                if 0<=base and top<=127:self.octave=candidate
+                candidate=max(-4,min(4,self.octave+(-1 if number==62 else 1)))
+                if 0<=pad_pitch(36,candidate) and pad_pitch(99,candidate)<=127:self.octave=candidate
         elif number==70:self.selected=(self.selected+(1 if value<64 else -1))%6
     def cut_source(self,bank):return bank['archive_id'] or ('offline',bank['line_index'])
     def cut(self,bank,index):
         return self.edits.get((self.cut_source(bank),index),bank['cuts'][index])
     def leds(self):
         ch=self.selected
+        if self.manual[ch] and ch in (1,2,3):
+            active={pad_pitch(n,self.octave) for n in self.held}
+            return {n:(37 if pad_pitch(n,self.octave) in active else 65 if pad_pitch(n,self.octave)%12==2 else 123 if pad_pitch(n,self.octave)%12 in (0,2,4,5,7,9,11) else 66) for n in range(36,100)}
         return {n:(100 if n in self.held else (35 if self.manual[ch] else (12 if ch==0 and self.drum_page*64+n-36<len(self.catalog) else 0))) for n in range(36,100)}
     def close(self):self.pool.shutdown(wait=True,cancel_futures=True)

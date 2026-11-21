@@ -4,7 +4,7 @@ A self-contained Lo-Fi instrument: six Auto/Manual mixer channels, real AJ Hall
 full drum takes, acoustic Liminal multisamples, playable exact film chops, and
 slowly crossfading collection images behind readable controls. No Mac instance,
 controller connection, AI music/image service or network listener is needed.
-Boot starts stopped; Play starts the local arrangement.
+Boot starts stopped; Play toggles the local arrangement.
 
 **Status:** live Push runtime **bc800b5ebc6a9ce5021be0f011fa7b317ce8e3fc**.
 Live Internet Archive newsreel sourcing, background decoding, boundary publication
@@ -13,7 +13,7 @@ tests and234private-library rehearsal checks pass. Existing recordings/sessions
 are preserved. Physical listening and pad feel remain human checks; see
 [validation](docs/STANDALONE_VALIDATION.md).
 
-Press Play to start. Select a channel with the six top buttons; hold Shift and
+Press Play to start or stop. Select a channel with the six top buttons; hold Shift and
 press its lower button for Manual, then play the pads. Mix exposes six channel
 levels on the first six encoders; the Volume encoder adjusts master. In Drums
 Auto, pads choose a take, arrows switch catalog pages, and Repeat requests

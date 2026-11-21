@@ -1,6 +1,6 @@
 # Standalone controls
 
-- Play85: start the prepared automatic arrangement immediately. Stop Clips29:
+- Play85: toggle the prepared arrangement between playing and stopped. Stop Clips29:
   hush all voices/effect tails and return the take position to zero. Boot starts
   stopped. Manual pads can audition while stopped.
 - Top102–107 select Drums, Bass, Lead, Mids, Chops, Film. Wheel70 moves one channel
@@ -10,9 +10,11 @@
   common take clock evolving; manually held onsets keep their original source.
 - Mix112: encoders71–76 change six corresponding channel levels. Device110 or
   Note50: encoders71–75 change selected Level, Tone, Echo, Room and Pan.
-  Encoders76–78 have no action in Device view. Volume79 always changes master.
-- Melodic Manual pads36–99: right+1scale degree, up+3. Bass begins at MIDI36+
-  tonic, Lead/Mids at MIDI48+tonic. Arrows62/63 move octave, bounded to a complete
+  Encoders76–78 edit chops in Chops/Film Device view (below). Volume79 always changes master.
+- Melodic Manual pads36–99: exact Stillwater default centered D Dorian grid,
+  right+1scale degree, up+3. All three note channels span MIDI38–86 at octave0;
+  the movable triangle plays D/F/A. Root pads use Silt65, natural notes123,
+  accidentals66 and held exact-pitch duplicates37. Arrows62/63 move octave, bounded to a complete
   MIDI0–127 window. Velocity changes onset loudness; release addresses the held
   token even after channel/octave/programme changes. Pressure is not mapped.
 - Drums Auto pads select catalog entry1–64; arrows toggle to entries65–100.
@@ -63,3 +65,11 @@ Prelinger metadata with a bounded audio/media derivative is eligible. Requests
 can fail or take minutes; the active source continues playing. Three decoded
 windows are cached on disk; the latest valid window is restored after reboot.
 The original bundled film remains the immediate offline boot fallback.
+
+Drums start dry (Echo0, Room0); their original take remains intact. Echo and
+Room can still be added deliberately. Each chop has bounded foreground gain
+(target .11 source RMS, peak ceiling .6, maximum16x gain), shared by Auto and
+Manual. Film remains the quiet full source at .16 gain. Both use the same film
+recording; chopping does not isolate speech from its original soundtrack.
+Edited manual cuts retain the selected cut gain, bounded against the full-source
+peak; publishing a newly prepared bank recalibrates its suggested cuts.

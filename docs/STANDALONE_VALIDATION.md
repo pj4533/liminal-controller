@@ -1,5 +1,25 @@
 # Standalone validation
 
+Playability correction (2026-11-21), pending hardware rollout/review:
+strict native host and Zig0.13 x86_64 builds pass; host111tests pass, including
+10 focused regressions for Play toggle/queue order/hush, Stillwater default
+pitches/colors/chord triangle/octave limits, manual native events, drum impulse
+tail silence, bounded foreground gain, exact Auto/Manual chop PCM equality and
+Chops/Film channel/source isolation. Private-library rehearsal passes234checks.
+The same offline-source Auto Chops render rises from RMS.00045764 to.00461615
+(20.1dB); Film stays.00108610. Dry drums are.02713861. These are isolated
+native memory-render measurements, not listening or physical pad evidence.
+Live device was inspected read-only before rollout: expectedbc800b5 source,
+stopped, ready, no error/overflow, one historical xrun and no log text.
+Cached live sources had RMS.01181/.01263/.04439 before the fixed.35 chop
+multiplier, confirming level mismatch against drums normalized to.11.
+Source inspection and PCM isolation tests found separate Chops/Film channel
+routes sharing film PCM intentionally. Normalization cannot remove music or
+background sound already in that source. Manual remains fixed Stillwater D
+Dorian independently of automatic harmony. Device source/binary pairing,
+master-zero hardware checks and physical listening remain required after review.
+
+
 Live archive update on2026-11-21: deployed runtime
 **bc800b5ebc6a9ce5021be0f011fa7b317ce8e3fc**,279manifest hashes verified.
 Host101/101tests passed in2.161s; device101/101tests passed in2.136s. Strict native host/x86 builds pass. The final private

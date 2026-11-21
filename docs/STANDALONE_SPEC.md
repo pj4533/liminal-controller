@@ -5,7 +5,7 @@ The entire Lo-Fi sound engine runs on Push 3; no running Mac Liminal instance,
 TCP controller peer, AI image generation or model service is required.
 
 Each of six mixer channels has Auto/Manual, mute, level, tone, echo, room and
-pan. Play starts the local AJ Hall-backed arrangement; manual channels suppress
+pan. Play toggles the local AJ Hall-backed arrangement; manual channels suppress
 only their automatic notes and remain playable while the common timeline runs.
 Drums, harmony, prepared film chops and instrument programmes change together
 at a 16-bar/64-beat boundary. Held notes retain their original sample identity.

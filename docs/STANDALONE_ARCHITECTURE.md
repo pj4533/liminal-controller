@@ -84,3 +84,17 @@ ALSA plumbing is adapted from Stillwater's MIT engine.c209–240: `hw:A3,0`,
 44.1kHz/256frames,16channels S24_3LE, stereo duplicated into outputs1–4 and
 others zero, nonblocking partial writes and xrun recovery, dlopen libasound.
 Only device testing can qualify deadline/xrun/CPU claims.
+
+Play toggle resolves on the native render owner in command queue order, so two
+presses within one audio block still start then stop. Stop uses the existing
+voice release, delay clear and take-position reset. Drums start with no echo or
+room send. Melodic Manual uses Stillwater's centered default D Dorian grid
+independently of the automatic arrangement key.
+
+Chops and Film intentionally share immutable film PCM; they have separate
+channel gain/mute/effects paths. Previously unnormalized .35 chop gain left
+quiet archive material below the normalized drum take. Preparation now computes
+per-cut foreground gain, bounded by16x and a .6 full-source peak ceiling. The
+same gains feed Auto sliced PCM and Manual full-source offsets. Edited Manual
+ranges keep their cut gain; the full-source ceiling protects louder edits. No
+new audio-thread analysis, allocation or PCM rewrite is introduced.

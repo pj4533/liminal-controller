@@ -58,7 +58,7 @@ int lm_bank(Engine *s,int slot,const Bank *b){
  int previous=-1;
  for(int i=0;i<b->count;i++){
   Event e=b->events[i];
-  if(e.frame<previous||e.frame>=b->length||e.channel<0||e.channel>=NC||e.sample<0||e.sample>=NS||!s->samples[e.sample].pcm||e.gate<1||!isfinite(e.speed)||e.speed<=0||e.speed>16||!isfinite(e.gain)||e.gain<0||e.gain>4||!isfinite(e.attack)||e.attack<1||!isfinite(e.release)||e.release<1)return 0;
+  if(e.frame<previous||e.frame>=b->length||e.channel<0||e.channel>=NC||e.sample<0||e.sample>=NS||!s->samples[e.sample].pcm||e.gate<1||!isfinite(e.speed)||e.speed<=0||e.speed>16||!isfinite(e.gain)||e.gain<0||e.gain>(e.channel==4?16:4)||!isfinite(e.attack)||e.attack<1||!isfinite(e.release)||e.release<1)return 0;
   previous=e.frame;
  }
  s->banks[slot]=*b;return 1;
@@ -84,6 +84,8 @@ static void commands(Engine *s){
  unsigned r=atomic_load(&s->read),w=atomic_load_explicit(&s->write,memory_order_acquire);
  for(unsigned budget=0;r!=w&&budget<NQ;budget++,r++){
   Command c=s->queue[r%NQ];int ch=c.a;
+  /* Resolve toggle on the render owner, including rapid queued Play presses. */
+  if(c.op==15)c.op=s->playing?2:1;
   switch(c.op){
    case 1:s->hush=0;if(s->current>=0)s->playing=1;break;
    case 2:s->hush=1323;s->playing=0;s->position=s->event=0;for(int i=0;i<NV;i++){release(&s->voices[i]);if(s->voices[i].left>1323)s->voices[i].left=1323;}memset(s->delay,0,sizeof s->delay);break;
