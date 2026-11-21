@@ -1,50 +1,42 @@
-# Liminal Controller
+# Liminal for Push 3 Standalone
 
-A standalone Push 3 surface for a running [Liminal](https://github.com/pj4533/Liminal)
-instance. Full-screen original cinematic material, eight live remote controls,
-channel mixer, manual scale pads, prepared drum choices and live chop banks.
-Python 3.10+, standard library at runtime. No audio is generated on Push.
+A self-contained Lo-Fi instrument: six Auto/Manual mixer channels, real AJ Hall
+full drum takes, acoustic Liminal multisamples, playable exact film chops, and
+slowly crossfading collection images behind readable controls. No Mac instance,
+controller connection, AI music/image service or network listener is needed.
+Boot starts stopped; Play starts the local arrangement.
 
-![Synthetic 960×160 simulator screen](docs/media/simulator-device.png)
+**Status:** locally implemented and tested; a private complete x86_64 payload is
+staged. Hardware installation and audible/physical acceptance remain blocked by
+an unverified changed SSH host identity. Do not treat native memory renders as
+proof of device operation. Existing controller/Stillwater music is preserved.
 
-The controller opens one persistent outbound TCP connection to Liminal on your
-trusted LAN, normally port 20808. It boots safely disconnected and displays
-WAITING FOR LIMINAL. Play requests the normal Liminal video/readiness gate.
-All values, modes, instrument identities and pad readiness come from Liminal;
-reconnect never restores an old mix or replays a note.
-
-## Try without hardware
+Read [specification](docs/STANDALONE_SPEC.md),
+[architecture and limitations](docs/STANDALONE_ARCHITECTURE.md),
+[controls](docs/STANDALONE_CONTROLS.md) and
+[installation/recovery](docs/STANDALONE_INSTALL.md).
 
 ```sh
+sh scripts/build-native.sh
 python3 -m unittest discover -s tests -v
-python3 scripts/demo.py --screenshot .build/demo.ppm
+ZIG=/your/verified/zig sh scripts/build-native.sh device
+python3 scripts/rehearse-standalone.py --assets /your/private-assets --out .build/rehearsal
+python3 src/standalone_app.py --simulate --home /tmp/liminal-demo \
+  --engine "$PWD/.build/engine.so" --assets /your/private-assets --seconds 3 \
+  --screenshot .build/demo.ppm
 ```
 
-The demo runs the actual `src/app.py --simulate` entry point and a deterministic
-local synthetic peer. It produces a native-size PPM without USB, MIDI or audio.
-For interactive protocol experiments, run `python3 src/fake_server.py --ambient`
-and `python3 src/app.py --simulate --seconds 10 --screenshot .build/frame.ppm`
-in separate terminals. The simulator is intentionally headless; automated tests
-exercise the real MIDI parser and Controller.event handler.
+Runtime is Python3.10 standard library plus the native C11 engine, existing ALSA
+and bundled separately licensed FFmpeg for off-thread image decoding. Pillow is
+only needed by explicit host-side media preparation. Commercial AJ Hall WAVs
+are supplied privately by their owner; they are never committed or distributed
+in this source repository. Bundled acoustic sample credits are retained in
+[lofi-samples.md](docs/lofi-samples.md).
 
-**Status (2026-11-20):** implementation and repairs are pushed. Controller
-`c5917418` was installed and verified running before a controlled reboot:
-exclusive controller ownership, advancing USB display transfers and disconnected
-readiness were observed; the existing session and 104 recordings were preserved,
-and return to Stillwater was exercised. After reboot, strict SSH rejected a
-changed host key. No replacement key was accepted; post-reboot identity and
-operation are **unknown**. Latest documentation/bundle revisions have not been
-deployed over that lost trust.
+This branch supersedes the older remote-controller implementation. Legacy
+controller files/tests remain for provenance and regression coverage and are
+excluded from the standalone runtime payload. The current runtime entry is
+`src/standalone_app.py`; `src/app.py` is the historical controller entry.
 
-The paired Liminal source is `push3` commit `378174bd`. Native Mac builds/tests,
-visionOS compilation and connected audio/playability remain unverified; the
-pre-reboot controller was disconnected from Liminal. Lo-Fi bass/lead/mids remain
-disabled pending isolated-wet measurements; Film and Space manual pads are
-unavailable. Network RTT is never represented as pad-to-audio latency. See the
-[host coding-session handoff](docs/MAC_NATIVE_HANDOFF.md) for native work and
-trusted device identity recovery. The full playable-project objective is open.
-
-Read [installation/recovery](docs/INSTALL.md), [controls](docs/CONTROLS.md),
-[architecture](docs/ARCHITECTURE.md), [protocol](docs/protocol-v1.md),
-[validation](docs/VALIDATION.md), and [artwork provenance](docs/ARTWORK.md).
-MIT; retained upstream notices in NOTICE and LICENSE.push-hack.
+MIT PJ Gray; Stillwater/Push Hack notices retained. FFmpeg has its own GPL
+license/provenance in the private runtime tools directory.

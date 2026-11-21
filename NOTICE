@@ -17,3 +17,18 @@ contain no footage, sample recordings, device configuration or private addresses
 Original generated artwork provenance: docs/ARTWORK.md.
 Ableton and Push are their owners' trademarks. This independent application is
 not endorsed or supported by Ableton. No vendor software is distributed.
+
+Standalone branch (2026-11-21): composition.py ports a documented subset of
+Liminal's LofiScore/LofiPreset/LofiSampleBank/LofiBassVoice/LofiScore+Mids policy,
+from https://github.com/pj4533/Liminal at
+67fde8da0c18bb8ace86d0a03a866f5670f141d6, MIT Copyright (c) 2026 PJ Gray.
+Native ALSA plumbing and standalone ownership/supervision derive from Stillwater
+at a61577df17d5436e1a76b0043c9e69f85883103d under the same MIT license.
+The native sampler/mixer/scheduler ABI is new and independent of Stillwater synth.
+Bundled acoustic WAVs originate from the CC0 libraries credited in docs/lofi-samples.md.
+Cleveland API pictures retain per-record CC0 credits; Prelinger film audio retains
+its individual public-domain source record in the private runtime media catalog.
+Commercial AJ Hall recordings are owner-supplied private assets and are not
+licensed for redistribution by this repository. FFmpeg is obtained separately;
+its own GPL LICENSE.txt, pinned upstream URL/hash and ELF provenance accompany
+any private runtime binary, outside the scope of this MIT license.

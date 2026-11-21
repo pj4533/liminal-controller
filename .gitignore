@@ -11,3 +11,8 @@ recovery/
 sessions/
 recordings/
 .env
+private-assets/
+image-cache/
+dialogue-lines.json
+engine.so
+tools/
