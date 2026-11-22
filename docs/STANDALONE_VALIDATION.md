@@ -175,3 +175,46 @@ competitors; it checkpoints old recovery/state and observes stopped ALSA/display
 counters for60seconds. The live installation used checkpointed current-session
 qualification followed by primary-only dispatcher installation and stock API
 acknowledgement, preserving the secondary recovery system.
+
+
+## Complete phrase pads and Manual source refresh — 2026-11-22 UTC
+
+Deployed runtime `a89cc365cb669e12793dfe8c6d20de7d007079dc`. Each populated
+Chops pad now addresses one unique consecutive region, covering the entire
+available phrase. Quiet boundaries near750ms subdivisions give64cuts for a
+48second live window and11for an8second offline line; unused pads are unlit
+and inert. Automatic sample slots remain bounded at eight; Manual addresses
+all cuts in the immutable source. Fresh archive requests run at every take
+transition in Auto or Manual, retaining the180second background retry and
+existing cache on failed/slow fetches. New material still publishes at64beats.
+
+Host and actual Push `python3 -m unittest discover -s tests -v`:118passed,
+zero failures (device3.784s). New regressions verify complete contiguous source
+coverage, unique native pad offsets for short/full windows, inactive pads,
+offline/live preparation, and refresh requests across three native Manual take
+transitions. Existing transport, melodic layout, chop gain and dry-drum tests pass.
+Host and verified Zig0.13x86 builds pass;37source/scriptfiles parse asPython3.10.
+Private-library rehearsal:234checks passed, zero failures. Native960x160Chops
+and Help renders were viewed, including the actual device qualifier framebuffer.
+
+Actual master-zero ALSA/USB qualifier passed in230.809s. Fresh IA download and
+decode took6.658s; first source publication55.608s. Its64unique cuts covered all
+2,116,800frames. Chops stayed Manual through three subsequent take transitions:
+revisions5,7,9 each published a different freshly downloaded archive source,
+and all three observed transition requests were accepted. Edited chop PCM was
+finite, peak.092710/RMS.024543; Stop ended with zero voices and peak. No audio
+was heard. Xrun delta0, overflow0,2198displayframes; MIDI-pollp952.327ms,
+max106.244ms. These timings do not establish physical pad latency or feel.
+A forced network failure retained the active source and continuing ALSA.
+
+All279runtime hashes verified after normal-service restart; manifest SHA256
+`4c95985547c7ed4680cfcc967fb44e321c22b9e7e45f7a14bf22da603f8f37a8`.
+Native engine is byte-identical to the previous accepted build. Fresh normal
+service passed60.284s stopped readiness, zero voices/peak/errors/overflow,
+xruns0→0, ALSAframes19,969→2,680,577, written19,995→2,680,363 and display3→600.
+The app was sole USB/MIDI/PCM owner; NEXT READY was true at completion.
+Recording inventory and session hashes matched the stopped checkpoint. Existing
+init, stock/recovery paths and OS were preserved; no reboot was needed for this
+Python control/preparation change. Private deployment log/checkpoint details
+remain outside git. Physical listening, button presses and pad feel remain PJ's
+acceptance; silent controls/counters/PCM checks establish only technical behavior.
