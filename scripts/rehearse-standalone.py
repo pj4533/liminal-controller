@@ -65,7 +65,9 @@ with tempfile.TemporaryDirectory() as home:
         ui.fx_pages[2]=0
         deadline=time.monotonic()+30
         while ui.pending and time.monotonic()<deadline:ui.tick();engine.render(1);time.sleep(.01)
-        check('worker prepared next bank',ui.next_slot is not None)
+        speech_available=ui.next_slot is not None
+        check('worker prepares text bank or honestly retains current',speech_available or (ui.speech.state=='UNAVAILABLE' and bool(ui.error)))
+        metrics['speech_state']=ui.speech.state;metrics['speech_error']=ui.speech.error
         background=Background(a.assets);check('three real API image caches',len(background.images)==3)
         write_ppm(a.out/'stopped.ppm',render(ui,engine.status(),background))
         ui.send(1);pcm=array.array('f');remaining=current['length']+512
@@ -73,7 +75,7 @@ with tempfile.TemporaryDirectory() as home:
         while remaining:
             n=min(4096,remaining);block=engine.render(n);pcm.extend(block);remaining-=n;ui.tick()
         metrics['render_wall_seconds']=time.monotonic()-started
-        check('real 64 beat bank transition',engine.status()['bank']!=ui.last_bank or ui.current['revision']>=1)
+        check('64 beat publication or unavailable-worker incumbent retention',(engine.status()['bank']!=ui.last_bank or ui.current['revision']>=1) if speech_available else ui.current['revision']==0)
         check('whole render finite limited',all(math.isfinite(x) and abs(x)<1 for x in pcm))
         write_ppm(a.out/'playing.ppm',render(ui,engine.status(),background))
         shorts=array.array('h',(round(max(-1,min(1,x))*32767) for x in pcm))

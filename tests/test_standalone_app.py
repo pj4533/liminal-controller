@@ -39,6 +39,7 @@ class AppFeedbackTests(unittest.TestCase):
         midi.note.side_effect=lambda n,v:writes.append((clock[0],n,v)) or True
         ui=MagicMock();ui.recovery_request=None;ui.selected=4;ui.shift=False;ui.mix=False;ui.settings=False
         ui.manual=[False]*6;ui.muted=[False]*6;ui.next_slot=None;ui.pending=None;ui.error='';ui.archive=None
+        ui.speech.state='TEXT READY';ui.speech.error=''
         ui.current=dict(film_credit='',revision=0,drum=0)
         ui.tick.side_effect=lambda:dict(alive=True,playing=False,voices=0,peak=0,xruns=0,overflow=0)
         ui.leds.side_effect=lambda:{36:5 if .025<=clock[0]<.085 else 35}

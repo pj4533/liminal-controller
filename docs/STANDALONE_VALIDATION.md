@@ -419,3 +419,25 @@ suite, silent qualifier, ownership, preservation and60second stopped-health
 checks remain mandatory. No listening, physical pad/display or device latency
 acceptance is claimed here. Source/native/manifest must upgrade together toABI2;
 the prior accepted ABI1 source/native pair remains the rollback target.
+
+## Text-aware candidate (not device deployment evidence)
+
+Host unit suite:181passed,0failed, including actual native red slice5 on physical
+second-row pad, inactive right-half pad, post-selection release, DTW subword/
+contraction assembly, invalid/collapsed/missing timestamps, repeated-gram guard,
+semantic interest, conservative names/negations/numbers, protected intact gates,
+reserved complete outro across8revisions, subprocess deadline/kill/reap/cache,
+failed-source storm suppression and incumbent retention on preparation failure.
+Host private-library rehearsal:257checks passed; ARM correctly reports speech
+unavailable and keeps the incumbent. Separate actual device base.en DTW JSON plus
+matching public-domain AmateurS1950 PCM replay:52checks passed across8revisions,
+including complete intro/outro, unique bounded cuts,16distinct drum ranges,
+anchor continuity/line evolution and actual native finite full-score rendering.
+Native960x160Sound/Cuts/Help renders were inspected. Strict host and x86 native
+builds passed; check-speech-artifacts.py verified all three exact hashes.
+
+These do not establish newly integrated concurrent device speech/audio/USB
+performance, physical colors/input latency, hearing or human interest/feel.
+The private deployment qualifier must measure fresh (uncached) local base.en DTW
+while real ALSA and display/MIDI continue at master zero, show an actual prepared
+semantic bank and no new xruns. Retain stopped boot and saved rollback gates.

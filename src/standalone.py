@@ -7,6 +7,12 @@ from composition import Instruments,prepare,choose_drum,chop_gain,SR
 from sampler import Event
 from channel_fx import defaults,parameters,pages,page_parameters
 from dialogue_ledger import DialogueLedger
+from dialogue_speech import Speech
+def slice_note(index):
+    return 36+((index%32)//4)*8+(index//32)*4+index%4
+def slice_index(note):
+    pad=note-36;return (pad%8//4)*32+(pad//8)*4+pad%4
+
 NAMES=('DRUMS','BASS','LEAD','MIDS','CHOPS','FILM')
 # Stillwater's default centered D Dorian grid and Silt hardware palette.
 MANUAL_SCALE=(0,2,3,5,7,9,10)
@@ -24,6 +30,7 @@ class Instrument:
         self.level=[.65]*6;self.effects=[defaults(ch) for ch in range(6)];self.fx_pages=[0]*6;self.master=.45;self.octave=0
         self.held={};self.identity=0;self.next_revision=1;self.error='';self.pending=None;self.last_bank=-1;self.next_slot=None;self.queued_drum=None;self.drum_page=0
         self.archive_worker=archive_worker;self.archive=None;self.archive_dirty=False;self.chop=0;self.edits={};self.edit_gains={};self.archive_started=0
+        self.speech=Speech(home or assets,tools=Path(home or assets)/'tools')
         self.pool=concurrent.futures.ThreadPoolExecutor(max_workers=1,thread_name_prefix='prepare')
         first=min(range(len(self.catalog)),key=lambda i:abs(self.catalog[i]['bpm']-69))
         bank=prepare(self.instruments,self.assets,self.catalog,0,first,line_index=self.ledger.choose())
@@ -37,7 +44,7 @@ class Instrument:
         current=self.engine.banks[self.last_bank][1]
         if self.queued_drum is None:index=choose_drum(self.catalog,current['bpm'],self.catalog[current['drum']]['sha256'],random.Random(1042+self.next_revision))
         else:index=self.queued_drum;self.queued_drum=None
-        self.pending=self.pool.submit(prepare,self.instruments,self.assets,self.catalog,self.next_revision,index,current['bpm'],1042,self.ledger.choose(current['line_index']),self.archive);self.next_revision+=1;self.archive_dirty=False
+        self.pending=self.pool.submit(prepare,self.instruments,self.assets,self.catalog,self.next_revision,index,current['bpm'],1042,self.ledger.choose(current['line_index']),self.archive,self.speech);self.next_revision+=1;self.archive_dirty=False
     def tick(self):
         status=self.engine.status();bank=status['bank']
         if self.archive_worker:
@@ -45,7 +52,7 @@ class Instrument:
             if fresh:self.archive=fresh;self.archive_dirty=True
         if self.archive_dirty and self.pending is None:self.request_next(refresh=True)
         if status['playing'] and bank in self.engine.banks:
-            prepared=self.engine.banks[bank][1];text='' if prepared['archive_id'] else self.ledger.commit(prepared['line_index'],prepared['revision'])
+            prepared=self.engine.banks[bank][1];text='' if prepared['archive_id'] else self.ledger.commit(('text:'+prepared['dialogue']['line']) if prepared.get('dialogue') else prepared['line_index'],prepared['revision'])
             if text:self.pool.submit(self.ledger.save,text)
         if bank>=0 and bank!=self.last_bank:
             self.last_bank=bank;self.chop=min(self.chop,max(0,len(self.current['cuts'])-1));self.edits={k:v for k,v in self.edits.items() if k[0]==self.cut_source(self.current)};self.edit_gains={k:v for k,v in self.edit_gains.items() if k[0]==self.cut_source(self.current)};self.next_slot=None;self.request_next()
@@ -83,6 +90,11 @@ class Instrument:
             slot=self.engine.status()['bank']
             if slot not in self.engine.banks:return
             ch=self.selected;pad=number-36;bank=self.engine.banks[slot][1]
+            if ch==4:pad=slice_index(number)
+            elif ch==0 and not self.shift:
+                pad=slice_index(number)
+                if pad>=len(bank['drumcuts']):return
+            elif ch==5 and pad!=0:return
             if ch==4:
                 if pad>=len(bank['cuts']):return
                 self.chop=pad
@@ -94,7 +106,7 @@ class Instrument:
             if number in self.held:self.send(8,identity=self.held.pop(number))
             self.identity+=1;identity=self.identity
             if ch in (0,4,5):
-                if ch==0:local=bank['drumcuts'][pad%4];gain=bank['events'][0]['gain']*.9
+                if ch==0:local=bank['drumcuts'][pad];gain=bank['events'][0]['gain']*.9
                 elif ch==4:
                     local=1;gain=self.edit_gains.get((self.cut_source(bank),pad),bank['chop_gains'][pad])
                 else:
@@ -105,6 +117,7 @@ class Instrument:
                 frames=len(bank['pcm'][local])//2;offset=0
                 if ch==4:
                     offset,frames=self.cut(bank,pad);local=1
+                elif ch==0 and 'drum_ranges' in bank:offset,frames=bank['drum_ranges'][pad]
                 event=Event(frame=offset,channel=ch,sample=192+slot*16+local,gate=frames,speed=1,gain=gain*value/127,attack=128,release=256)
                 if not self.onset(slot,bank['revision'],identity,event):return
                 if ch in (0,4):self.held[number]=identity
@@ -139,7 +152,7 @@ class Instrument:
                     pcm=self.current['pcm'][1]
                     self.edit_gains[key]=chop_gain(pcm[start*2:(start+length)*2])
                     if self.archive and self.current['archive_id']==self.archive['credit']['sha256']:
-                        self.archive=dict(self.archive,cuts=list(self.archive['cuts']));self.archive['cuts'][self.chop]=(start,length);self.archive_dirty=True
+                        self.archive=dict(self.archive,cuts=list(self.current['cuts']),edited=True,semantic=self.current.get('dialogue'));self.archive['cuts'][self.chop]=(start,length);self.archive_dirty=True
                 return
             if self.mix:
                 if knob<6:self.level[knob]=min(1,max(0,self.level[knob]+delta*.01));self.effects[knob][0]=self.level[knob];self.send(4,knob,event=Event(gain=self.level[knob]))
@@ -177,23 +190,32 @@ class Instrument:
                 candidate=max(-4,min(4,self.octave+(-1 if number==62 else 1)))
                 if 0<=pad_pitch(36,candidate) and pad_pitch(99,candidate)<=127:self.octave=candidate
         elif number==70:self.selected=(self.selected+(1 if value<64 else -1))%6
-    def cut_source(self,bank):return bank['archive_id'] or ('offline',bank['line_index'])
+    def cut_source(self,bank):
+        source=bank['archive_id'] or ('offline',bank['line_index'])
+        return (source,bank['dialogue']['line']) if bank.get('dialogue') else source
     def cut(self,bank,index):
         return self.edits.get((self.cut_source(bank),index),bank['cuts'][index])
     def leds(self):
         ch=self.selected
         if ch==4:
-            leds={n:(100 if n in self.held else 35 if n-36<len(self.current['cuts']) else 0) for n in range(36,100)}
+            leds={n:(100 if n in self.held else 35 if slice_index(n)<len(self.current['cuts']) else 0) for n in range(36,100)}
         elif ch in (1,2,3):
             active={pad_pitch(n,self.octave) for n in self.held}
             leds={n:(37 if pad_pitch(n,self.octave) in active else 65 if pad_pitch(n,self.octave)%12==2 else 123 if pad_pitch(n,self.octave)%12 in (0,2,4,5,7,9,11) else 66) for n in range(36,100)}
-        else:leds={n:(100 if n in self.held else 35) for n in range(36,100)}
+        elif ch==0 and self.shift:leds={n:(35 if self.drum_page*64+n-36<len(self.catalog) else 0) for n in range(36,100)}
+        else:
+            count=len(self.current['drumcuts']) if ch==0 else 1
+            leds={n:(100 if n in self.held else 35 if (slice_index(n) if ch==0 else n-36)<count else 0) for n in range(36,100)}
         feedback=self.engine.feedback(ch)
         if not self.manual[ch] and feedback and feedback[0]==self.current['revision']:
             code=feedback[1]
             if code>=128:
                 for n in leds:
                     if pad_pitch(n,self.octave)==code-128:leds[n]=5
-            elif 1<=code<=64:leds[35+code]=5
+            elif 1<=code<=64:
+                note=slice_note(code-1) if ch in (0,4) else 35+code
+                if leds.get(note):leds[note]=5
         return leds
-    def close(self):self.pool.shutdown(wait=True,cancel_futures=True)
+    def close(self):
+        if hasattr(self,'speech'):self.speech.close()
+        self.pool.shutdown(wait=True,cancel_futures=True)

@@ -1,0 +1,35 @@
+{
+  "whisper_version": "v1.9.5",
+  "source_url": "https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v1.9.5.tar.gz",
+  "source_archive_sha256": "ff1a9053feb509ff9d7729703355541ae9690073a6b1c40eb692c962e0dc1720",
+  "compiler": "Zig0.13.0 cc/c++ -target x86_64-linux-gnu.2.35 -mcpu=x86_64_v3",
+  "cmake": {
+    "BUILD_SHARED_LIBS": false,
+    "GGML_NATIVE": false,
+    "GGML_AVX2": true,
+    "GGML_F16C": true,
+    "GGML_FMA": true,
+    "GGML_OPENMP": false,
+    "WHISPER_CURL": false,
+    "WHISPER_COMMON_FFMPEG": false,
+    "WHISPER_BUILD_TESTS": false
+  },
+  "target": "whisper-cli",
+  "loader": "/lib/ld-linux-x86-64.so.2",
+  "runtime_arguments": [
+    "-ng",
+    "-t",
+    "1",
+    "-l",
+    "en",
+    "-bs",
+    "1",
+    "-bo",
+    "1",
+    "-nf",
+    "-nfa",
+    "-dtw",
+    "base.en",
+    "-ojf"
+  ]
+}

@@ -10,7 +10,7 @@ from archive_worker import chops,SR
 from composition import prepare
 from sampler import Sampler
 from channel_fx import defaults
-from standalone import Instrument
+from standalone import Instrument,slice_note
 
 class CoverageTests(unittest.TestCase):
     def test_entire_short_and_full_windows_partition_once(self):
@@ -38,7 +38,7 @@ class CoverageTests(unittest.TestCase):
                 bank=prepare(Instruments(),ROOT,[dict(file='test.wav')],0,0,line_index=2,archive=archive)
             self.assertTrue(all(not e.get('pad') for e in bank['events'] if e['channel'] in (0,5)))
             cuts=bank['cuts'];self.assertEqual(cuts[0][0],0 if live else SR*16)
-            self.assertEqual(cuts[-1][0]+cuts[-1][1],SR*(48 if live else 24))
+            self.assertEqual(cuts[-1][0]+cuts[-1][1],SR*(8 if live else 24))
             self.assertEqual(len(bank['chop_gains']),len(cuts));self.assertEqual(len(bank['pcm']),15)
             for event in (e for e in bank['events'] if e['channel']==4):
                 self.assertLessEqual(event['gate'],len(bank['pcm'][-event['sample']-1])//2)
@@ -56,15 +56,25 @@ class CoverageTests(unittest.TestCase):
             try:
                 bank=self.bank(seconds=seconds);engine.install(bank);engine.render(1);ui=self.ui(engine)
                 onsets=[];ui.onset=lambda *args:onsets.append(args[-1]) or True
-                for n in range(36,100):ui.event(dict(kind='note',number=n,value=100))
+                for n in [slice_note(i) for i in range(64)]:ui.event(dict(kind='note',number=n,value=100))
                 self.assertEqual([(e.frame,e.gate) for e in onsets],bank['cuts'])
                 self.assertEqual(len(set(e.frame for e in onsets)),len(bank['cuts']))
-                self.assertEqual([n for n,v in ui.leds().items() if v],[36+i for i in range(len(bank['cuts']))])
+                self.assertEqual([n for n,v in ui.leds().items() if v],sorted(slice_note(i) for i in range(len(bank['cuts']))))
                 if seconds==2:
                     ui.shift=True;ui.chop=1;ui.event(dict(kind='note',number=99,value=100));self.assertEqual(ui.chop,1)
                     ui.event(dict(kind='cc',number=78,value=1));self.assertEqual(ui.chop,2)
                     ui.event(dict(kind='cc',number=78,value=1));self.assertEqual(ui.chop,0)
             finally:engine.close()
+    def test_failed_text_preparation_keeps_native_bank_cuts_and_incumbent(self):
+        import concurrent.futures
+        engine=Sampler(ROOT/'.build/engine.so')
+        try:
+            engine.install(self.bank());engine.render(1);ui=self.ui(engine)
+            ui.archive_worker=None;ui.pending=concurrent.futures.Future();ui.pending.set_exception(TimeoutError('Speech deadline'))
+            before=ui.current;slot=ui.last_bank;ui.tick()
+            self.assertIs(ui.current,before);self.assertEqual(engine.status()['bank'],slot)
+            self.assertIsNone(ui.pending);self.assertIsNone(ui.next_slot);self.assertIn('Speech deadline',ui.error)
+        finally:engine.close()
     def test_manual_mode_keeps_refreshing_across_three_native_take_transitions(self):
         engine=Sampler(ROOT/'.build/engine.so')
         try:

@@ -68,6 +68,8 @@ def render(ui,status,background):
         c.text(600,9,'7 PREV / 8 NEXT',MIST)
         c.text(804,9,'MASTER %d%%'%round(ui.master*100))
         source=drum if ch==0 else (bank['bass'][0] if ch==1 else bank['programs'][0][0] if ch==2 else bank['pad'][0] if ch==3 else (str(bank['film_credit'].get('title','OFFLINE FILM')) if isinstance(bank['film_credit'],dict) else 'OFFLINE FILM'))
+        if ch==4 and bank.get('dialogue'):
+            labels=bank['dialogue']['labels'];source=labels[min(ui.chop,len(labels)-1)]
         c.rect(0,30,960,14,DARK);c.text(8,33,fit('SOURCE: '+source,610),BRASS)
         c.text(640,33,'TOP/WHEEL: CHANNEL  LOWER 7/8: FX PAGE',MIST)
         values=[]
@@ -92,7 +94,9 @@ def render(ui,status,background):
     ready='NEXT READY' if ui.next_slot is not None else ('PREPARING' if ui.pending else 'REPEATING CURRENT')
     c.text(8,137,('PLAYING' if status['playing'] else 'STOPPED')+'  %d BPM  BAR %02d/16  '%(bank['bpm'],bar)+ready,MIST)
     c.text(600,137,'REPEAT: NEW TAKE/IA  STOP: HUSH',BRASS)
-    c.text(8,150,fit(ui.error or archive or 'ARROWS: OCTAVE/DRUM PAGE  DELETE: RELEASE  MIX: OVERVIEW  HELP: CONTROLS',944))
+    speech=getattr(ui,'speech',None)
+    speech_status=('SPEECH '+speech.state+' '+speech.error) if speech else ''
+    c.text(8,150,fit(ui.error or speech_status or archive or 'ARROWS: OCTAVE/DRUM PAGE  DELETE: RELEASE  MIX: OVERVIEW  HELP: CONTROLS',944))
     if ui.settings:
         c.rect(0,28,960,132,DARK);c.text(12,40,'RECOVERY - SAVE AND STOP FIRST',INK,2)
         c.text(12,65,'LOWER 1 STILLWATER / 2 STOCK / 3 OLD CONTROLLER',MIST)
@@ -104,10 +108,10 @@ def render(ui,status,background):
         c.text(12,72,'TOP 1-6 OR WHEEL: CHANNEL. MIX: LEVELS. SHIFT+LOWER 1-6: AUTO/MANUAL. PADS ALWAYS PLAY.')
         c.text(12,87,'CHOPS/FILM CUTS PAGE: KNOB 6 START / 7 LENGTH / 8 PAD. 50MS STEPS; SHIFT: 5MS.')
         c.text(12,102,'CHOPS: HOLD LIT PADS IN SOURCE ORDER. SHIFT+PAD: SELECT. FILM: ANCHOR ONE-SHOT.')
-        c.text(12,117,'DRUMS SHIFT+PAD: CHOOSE TAKE. REPEAT: NEW TAKE/IA. PUBLISH: 16 BARS. STOP: HUSH.')
+        c.text(12,117,'CHOPS: 4-WIDE UP LEFT32 THEN RIGHT32. DRUMS: LEFT16. UNUSED PADS DARK. SHIFT+DRUM: TAKE.')
         credit=background.credits[0] if background.credits else {}
         c.text(12,132,fit('IMAGES: CLEVELAND / CC0 / '+str(credit.get('title','CACHE UNAVAILABLE')),936),BRASS)
-        c.text(12,147,'SOURCE CREDITS AND HASHES: LOCAL PRIVATE-ASSETS/*.JSON. NO TRANSCRIPTION.')
+        c.text(12,147,'SOURCE CREDITS: LOCAL PRIVATE-ASSETS/*.JSON. SPEECH RUNS LOCALLY; PENDING/FAILURE KEEPS MUSIC.')
     return bytes(c.pixels)
 
 

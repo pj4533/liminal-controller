@@ -76,18 +76,21 @@ def drum_grid(pcm,bpm):
         times.append(max(times[-1]+.001 if times else 0,at));activity.append(novelty[best]/max(peak,1e-9) if active else 0)
     return times,activity
 
-def plan(pcm,cuts,drums,bpm,revision,seed=1042):
+def plan(pcm,cuts,drums,bpm,revision,seed=1042,semantic=None):
     """(step, sample slot, gate steps, accent seconds), 16-bar seeded arc.
     Hook skeleton holds two takes; fills and feel evolve each take. At most
     six hits/bar, three consecutive sixteenths, one empty beat per groove bar.
     No consecutive repeated piece outside explicit build stutters.
     """
     if not cuts:return [],[],[]
-    selected=vocabulary(pcm,cuts);rng=random.Random(seed+revision*617)
+    selected=list(range(min(8,len(cuts)))) if semantic else vocabulary(pcm,cuts)
+    rng=random.Random(seed+revision*617)
     times,activity=drum_grid(drums,bpm);feel=FEELS[(seed+revision)%len(FEELS)]
     template=TEMPLATES[(seed+revision//2)%len(TEMPLATES)];count=len(selected)
-    signature=0;response=min(1,count-1);third=min(2,count-1)
-    hits={0:(signature,None),24:(response,2)} # intro statement and tag
+    signature=semantic['signature'] if semantic else 0;response=semantic['response'] if semantic else min(1,count-1);third=min(3 if semantic else 2,count-1)
+    if semantic and not semantic['reorder']:
+        return [(s,0,None,times[s]) for s in (0,64,128,192)],selected,times
+    hits={0:(0 if semantic else signature,None),24:(response,2)} # intro statement and tag
     # Repeating two-bar hook, filled against the real take's energy attacks.
     for base in (32,64,96):
         cell={base+s:((signature,response,third)[role],2 if role!=1 else 4) for role,s in template}
@@ -108,13 +111,19 @@ def plan(pcm,cuts,drums,bpm,revision,seed=1042):
     for s in range(112,127,2):hits[s]=(rng.randrange(count),1)
     for s in (128,152,168,172,180):hits[s]=(rng.randrange(count),4)
     for s in (192,208,216,224,232,240,248,252):hits[s]=(rng.randrange(count),2)
-    result=[];previous=None;bar=-1;heard=set();last_order=-1
+    if semantic:
+        # Intro and outro state the complete line; no later event truncates it.
+        statement=cuts[0][1]/SR
+        hits={s:v for s,v in hits.items() if (s==0 or times[s]>=statement+.06) and s<192}
+        hits[192]=(0,None)
+    result=[];previous=None;blocked=0;bar=-1;heard=set();last_order=-1
     for s,(piece,gate) in sorted(hits.items()):
-        if piece==previous and count>1:piece=(piece+1+rng.randrange(count-1))%count
+        if times[s]<blocked:continue
+        if piece==previous and count>1 and not (semantic and s in (0,192)):piece=(piece+1+rng.randrange(count-1))%count
         if s//16!=bar:bar=s//16;heard=set();last_order=-1
         # Without a transcript, new pieces run in source order into each
         # signature. Repeated pieces are stutters, not reordered new words.
-        if piece!=signature and piece not in heard and piece<last_order:
+        if not semantic and piece!=signature and piece not in heard and piece<last_order:
             choices=[p for p in range(count) if p!=previous and (p in heard or p>=last_order)]
             if not choices:continue
             piece=rng.choice(choices)
@@ -122,5 +131,9 @@ def plan(pcm,cuts,drums,bpm,revision,seed=1042):
         if piece==signature:heard=set();last_order=-1
         previous=piece
         offset=0 if s%4==0 or not 32<=s<128 else feel[s%4-1]
-        result.append((s,piece,gate,max(0,times[s]+offset)))
+        accent=max(0,times[s]+offset)
+        if semantic and piece in semantic.get('protected_cuts',[0]):
+            if s<192 and accent+cuts[selected[piece]][1]/SR+.06>times[192]:continue
+            gate=None;blocked=accent+cuts[selected[piece]][1]/SR+.06
+        result.append((s,piece,gate,accent))
     return result,selected,times

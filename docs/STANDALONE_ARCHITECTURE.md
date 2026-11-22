@@ -62,23 +62,22 @@ hash-validated live cache in the background. Ongoing requests run at each64-beat
 with a180second background retry
 or on Repeat with Chops/Film selected. No network listener is opened.
 
-Suggested cuts partition the full decoded window into up to64 consecutive
-regions, aiming for750ms and preferring nearby low-energy boundaries. There are
-no gaps, overlaps or repeated pad assignments. The offline fallback exposes its
-complete current8second line. Manual offsets address all regions without extra
-PCM copies; eight automatic slice slots choose articulated cuts across that bank within the
-existing native capacity. Only populated Manual Chops pads light or trigger.
-The composition worker copies suggested energy/silence cuts into normal banks;
-fresh footage and automatic edits publish only at64-beat boundaries. Manual
-chops address the full immutable film PCM using Event.frame as source offset
-for identified manual onsets (automatic Event.frame remains schedule time).
-Start/length changes are small control metadata updates; no PCM slicing,
-allocation or decoding occurs on the audio thread. Existing onset bank pins
-retain both PCM and start/length through source changes. Film remains a separate
-mixer path and its manual anchor plays up to8seconds. This is editable acoustic
-chopping, without transcription or desktop semantic dialogue selection.
-`dialogue_ledger.py` continues to track only committed offline fallback lines;
-live source selection retains recent source identities in the archive worker.
+Archive acquisition still stores energy suggestions and immutable48-second PCM;
+composition uses a separate serial text worker instead. dialogue_speech.py runs
+one bounded hash-verified whisper.cpp process, first30seconds, actual DTW with
+flash attention off, greedy English and35sdeadline. Local source/model/options
+cache avoids repeated inference. dialogue_text.py refines lexical-center spans,
+uses the packaged MIT perceptron model and upstream interest/grammar lexicons,
+and prepares a unique eight-slot vocabulary. Failure preserves current playback.
+See DIALOGUE_PORT.md for conservative name protection and alignment limits.
+
+Manual offsets address the same immutable source PCM; Automatic owns eight
+prepared slices. Drums uses16distinct offset/length ranges of its original PCM,
+retaining the fixed15-bank-sample layout. All edited/automatic replacements
+publish at64beats; native render does no inference/decode/allocation. Onset-owned
+pins keep both PCM and range through source changes. Film is a separate mixer
+and one manual8-second anchor. Played offline text line identities enter the
+existing ledger only on committed playback; this is not the desktop motif crate.
 Exact source URL, rights, window time, SHA256 and suggested cuts live in private
 archive-cache JSON beside the decoded PCM.
 
@@ -116,7 +115,7 @@ new audio-thread analysis, allocation or PCM rewrite is introduced.
 The full selected-channel Device/Note UI and24parameter bus FX are documented
 in CHANNEL_FX.md. ABI1 now adds command16 while preserving onset/bank ownership.
 
-The D125–127 acoustic port is described in DIALOGUE_PORT.md. Native ABI2 appends
+The D124–127 text-aware port is described in DIALOGUE_PORT.md. Native ABI2 appends
 pad feedback identity to Event and provides lm_abi/lm_feedback. Python refuses
 an older native engine; source, native binary and manifest must update together.
 Successful native automatic onsets publish atomic channel/revision/pad feedback;

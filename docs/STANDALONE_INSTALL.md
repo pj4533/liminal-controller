@@ -148,3 +148,14 @@ abi2 and upstream10f5e1d. Never use the prior native engine or an earlier delta
 helper's fixed added-files allowlist. Follow the existing checkpoint/owner/hash,
 silent device suite/ALSA/USB qualification and60second normal-health gates above.
 The previous accepted ABI1 source/native/manifest must remain together for rollback.
+
+## Text-aware speech payload (candidate)
+
+Stage includes tools/whisper-cli, tools/ggml-base.en.bin and
+tools/averaged_perceptron_tagger_eng.zip plus licenses/. Run
+python3 scripts/check-speech-artifacts.py before staging; runtime verifies all
+three hashes. These are private staged artifacts, excluded from git. Follow the
+existing paired native/source checkpoint and rollback procedure, preserving
+speech-cache with other runtime state. Qualify actual local inference while
+ALSA/USB continue at master zero, with no new xruns and clear pending/ready
+status. Never infer device acceptance from host replay. Details: local-speech.md.

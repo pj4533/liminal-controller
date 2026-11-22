@@ -66,7 +66,7 @@ def main():
                     for ch in range(6):buttons[102+ch]=127 if ch==ui.selected else 30;buttons[20+ch]=0 if ui.muted[ch] else (90 if ui.manual[ch] else 20)
                     for n,v in buttons.items():
                         if controls.get(n)!=v and midi.cc(n,v):controls[n]=v
-                status.update(pid=os.getpid(),ready=True,standalone=True,display_frames=display.frames if display else 0,next_ready=ui.next_slot is not None,preparing=ui.pending is not None,error=ui.error,image_worker_error=media.error if media else '',monotonic=now,archive_state=archive.state if archive else 'OFFLINE',archive_error=archive.error if archive else '',archive_credit=ui.current['film_credit'],archive_queued=bool(ui.archive and ui.archive['credit']['sha256']!=ui.current['archive_id']),revision=ui.current['revision'],drum=ui.current['drum'])
+                status.update(pid=os.getpid(),ready=True,standalone=True,display_frames=display.frames if display else 0,next_ready=ui.next_slot is not None,preparing=ui.pending is not None,speech_state=ui.speech.state,speech_error=ui.speech.error,error=ui.error,image_worker_error=media.error if media else '',monotonic=now,archive_state=archive.state if archive else 'OFFLINE',archive_error=archive.error if archive else '',archive_credit=ui.current['film_credit'],archive_queued=bool(ui.archive and ui.archive['credit']['sha256']!=ui.current['archive_id']),revision=ui.current['revision'],drum=ui.current['drum'])
                 tmp=ready.with_suffix('.tmp');tmp.write_text(json.dumps(status));os.replace(tmp,ready);last=now
             time.sleep(.002)
         if a.screenshot and frame:write_ppm(a.screenshot,frame)

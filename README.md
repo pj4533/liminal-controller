@@ -65,3 +65,9 @@ excluded from the standalone runtime payload. The current runtime entry is
 
 MIT PJ Gray; Stillwater/Push Hack notices retained. FFmpeg has its own GPL
 license/provenance in the private runtime tools directory.
+
+Text-aware chops now run offline on Push via whisper.cpp base.en and the MIT
+NLTK POS model. Whole-line intros/outros, meaningful words and protected phrases
+share unique Ableton Slicing pads; Drums has16distinct bottom-left4x4cuts.
+Only assigned pads light or play. Pending/failed analysis retains the current
+bank. See [dialogue port](docs/DIALOGUE_PORT.md) and [speech artifacts](docs/local-speech.md).

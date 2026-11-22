@@ -3,7 +3,8 @@
 This branch supersedes the old remote controller. Read README and
 STANDALONE_SPEC/ARCHITECTURE/CONTROLS/INSTALL in docs before editing. Current
 entry is src/standalone_app.py; legacy src/app.py is excluded from runtime packs.
-Runtime Python3.10 stdlib, separate native sampler ABI2, single MIDI/display and
+Runtime Python3.10 stdlib plus packaged offline whisper.cpp/base.en and MIT POS model;
+separate native sampler ABI2, single MIDI/display and
 ALSA owner. No Mac peer, inbound listener or AI generation. Preserve other work.
 
 Render stays bounded and allocation/file/network/decode free. Banks publish only

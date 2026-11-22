@@ -71,6 +71,15 @@ class AutoPlayTests(unittest.TestCase):
         self.assertEqual({n for n,c in self.ui.leds().items() if c==5},{39,44})
         self.ui.octave=3;self.assertFalse(any(c==5 for c in self.ui.leds().values()))
         self.ui.selected=4;self.assertFalse(any(c==5 for c in self.ui.leds().values()))
+    def test_red_slice_five_uses_second_row_and_unused_pad_is_inert(self):
+        bank=self.bank(1);bank['length']=SR*2
+        bank['cuts']=[(i*SR//8,SR//8) for i in range(5)];bank['chop_gains']=[1]*5
+        bank['events']=[dict(frame=0,channel=4,sample=-2,gate=SR,speed=1,gain=.1,attack=8,release=256,pad=5)]
+        self.engine.install(bank);self.engine.command(1);self.engine.render(129);self.ui.last_bank=self.engine.status()['bank']
+        self.assertEqual(self.ui.leds()[44],5);self.assertEqual(self.ui.leds()[40],0)
+        self.event(40);self.assertNotIn(40,self.ui.held)
+        self.event(44);self.sounding();self.assertIn(44,self.ui.held)
+        self.ui.selected=2;self.event(44,'note_off',0);self.assertNotIn(44,self.ui.held)
     def test_auto_manual_release_survives_mode_edit_selection_and_bank(self):
         gates.ChopGateTests.test_release_survives_selection_mode_edit_and_native_bank_change(self)
     def test_flash_expires_at_shorter_gate_or_source_not_only_timeout(self):

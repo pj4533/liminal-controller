@@ -33,11 +33,13 @@ Push also discovers public-domain Prelinger newsreels, downloads bounded audio
 derivatives and prepares fresh48second windows in the background. Repeat on
 Chops/Film requests new footage; automatic refresh requests run at every64-beat take transition in both modes,
 with a180second background retry. Manual
-Chops exposes unique chronological cuts over the entire prepared phrase, up to64
-populated pads, editable start/length and immediate pad audition from prepared PCM.
-Unused pads remain unlit/inert.
-New source banks publish at64beats; failures preserve the current source.
-No transcription or semantic dialogue selection is implemented.
+Chops exposes a text-aware vocabulary of up to eight unique whole-line, word,
+protected-phrase and mixed cuts. The offline whisper.cpp base.en worker analyzes
+first30seconds; NLTK POS and deterministic upstream interest/guards choose cuts.
+Ableton Slicing layout climbs four-wide through left32 then right32. Only
+populated pads light/play. Drums has16distinct bottom-left4x4cuts. New text/source
+banks publish at64beats; pending/failure keeps the incumbent and displays status.
+See DIALOGUE_PORT.md for alignment, cache, limits and full-line fallback.
 No full-screen reactive visualizer is added. Network failures retain the cache.
 
 Preserve all Stillwater sessions/history/recordings and the existing controller,

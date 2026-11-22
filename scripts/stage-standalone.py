@@ -12,6 +12,7 @@ import tarfile
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE=('src/image_worker.py','src/standalone_app.py','src/standalone.py','src/standalone_render.py','src/sampler.py','src/composition.py','src/dialogue_ledger.py','src/hardware.py','src/midi.py','src/canvas.py','scripts/standalone-supervisor.py','scripts/standalone-boot.py','scripts/install-standalone.py','scripts/deploy-staged.py','LICENSE','LICENSE.push-hack','NOTICE','docs/lofi-samples.md')
 SOURCE+=('scripts/boot-success.py','scripts/qualify-device.py')
+SOURCE+=('src/dialogue_speech.py','src/dialogue_text.py','src/dialogue_tagger.py','src/dialogue_lexicon.json')
 SOURCE+=('src/dialogue.py','src/channel_fx.py','src/display_worker.py','src/archive_worker.py','scripts/qualify-archive.py')
 def digest(path):
     h=hashlib.sha256()
@@ -29,6 +30,17 @@ def main():
     (a.out/'engine.so').write_bytes(engine)
     tools=a.out/'tools';tools.mkdir()
     for name in ('ffmpeg','ffprobe','LICENSE.txt','provenance.json'):shutil.copy2(ROOT/'.build/tools'/name,tools/name)
+    import sys
+    sys.path.insert(0,str(ROOT/'src'))
+    from dialogue_speech import BINARY_SHA,MODEL_SHA,TAGGER_SHA
+    for name,sha in (('whisper-cli',BINARY_SHA),('ggml-base.en.bin',MODEL_SHA),('averaged_perceptron_tagger_eng.zip',TAGGER_SHA)):
+        source=ROOT/'.build/speech'/name
+        if digest(source)!=sha:raise ValueError('Speech hash '+name)
+        if name=='whisper-cli':
+            blob=source.read_bytes()
+            if blob[:4]!=b'\x7fELF' or blob[18:20]!=b'\x3e\x00':raise ValueError('Speech x86_64 ELF required')
+        shutil.copy2(source,tools/name)
+    shutil.copytree(ROOT/'licenses',a.out/'licenses')
     # Deliberately private; catalog itself records protected source archive locations.
     shutil.copytree(a.assets,a.out/'private-assets',ignore=shutil.ignore_patterns('*.tmp','dialogue-lines.json'))
     files={str(p.relative_to(a.out)):digest(p) for p in sorted(a.out.rglob('*')) if p.is_file()}

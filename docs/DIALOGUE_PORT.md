@@ -1,62 +1,99 @@
-# Rhythmic chops and playable Auto
+# Text-aware chops and playable Auto
 
-Source: pj4533/Liminal main10f5e1d (2026-11-22 fetch), especially D124–127,
-DialogueOnset.attack, DialogueMotifTuning.hookTemplates, DialogueFeel and
-DialogueChopBeat.groove. This instrument remains independent of the Swift app.
+Adapted from pj4533/Liminal10f5e1d, particularly D124–127 DialogueHierarchy,
+DialogueLineInterest, DialogueReorderGuard, DialogueMotif, DialogueOnset,
+DialogueFeel and DialogueChopBeat. This remains an independent instrument.
 
-The portable worker now selects eight articulated cuts spread across the complete
-prepared source instead of eight evenly sampled indices played once every seven
-beats. Each selected slice retains its original chronological pad identity.
-A short RMS onset analysis skips quiet lead, retains at most30ms soft attack lead
-plus2ms preroll, and aligns the half-peak attack to the musical accent. Prepared
-PCM, bounded per-cut gain and held Manual source ranges remain immutable.
+## Offline speech and failure behavior
 
-Automatic composition uses the upstream four two-bar signature/response/third
-hook skeletons, held for two takes, within a64beat arc: statement/tag, recurring
-chop beat, denser build, sparse breakdown and return/outro. Extra groove stabs
-prefer gaps in the actual drum take's measured energy attacks. The groove is
-bounded to six onsets per bar, at most three consecutive sixteenths and a beat
-without an onset. Gates use one/two/four sixteenths, stop6ms before the grid end
-and retain a60ms minimum when the source permits. Each loop chooses one of the
-five upstream feels: grid, laid, rush, drunk or ahead; quarter steps stay put,
-offbeats shift consistently by at most24ms. Seeded choices evolve each take.
-New pieces remain in source order within runs into a signature because there is
-no semantic evidence permitting arbitrary reordering. Immediate repeated pieces
-are avoided when multiple cuts exist. Edits and new footage still publish only
-at64beat boundaries; no render-thread analysis or allocation is added.
+The default preparation worker runs whisper.cpp1.9.5 base.en locally on the
+first30seconds of decoded dialogue. No cloud inference, Python packages or pip
+are needed. Speech runs outside the audio owner, serially, with one inference
+thread, nice15 and, when available, affinity to the highest allowed CPU. Its
+35-second process deadline kills and reaps the worker. Shutdown also kills and
+reaps before joining preparation. The explicit existing device loader handles
+the research binary's interpreter path. Runtime verifies the worker, weights
+and POS model hashes. Artifact provenance and licenses are in
+[local-speech.md](local-speech.md).
 
-Both Auto and Manual now accept the same manual pad onsets. Mode changes only
-gate future automated notes. Existing automatic and held notes retain their
-own lifetime and release identity. Drums Shift+pad preserves catalog choice in
-both modes; normal pads always audition the four drum cuts. Film retains its
-one-shot anchor. Chops remains held-to-play, ending once or on release.
-Native successful automatic triggers alone create red pad flashes, bounded by
-120ms/source/gate. Exact cut identity and melodic pitch travel with the native
-event; feedback is isolated by channel and bank revision. Continuous Drum/Film
-playback has no invented pad trigger and does not flash a proxy pad. Manual playing, rejected voices and stale-bank feedback
-cannot invent red triggers. Stop, mute and Manual clear the relevant feedback. Pad LED writes poll at50Hz
-independently of the10Hz display so short gates are not skipped between frames.
+Recognition uses greedy English decoding, no temperature fallback, actual DTW,
+and **-nfa**: flash attention disables DTW. Full JSON lexical token t_dtw centers
+are10ms units. Token offsets can collapse and are never substituted for DTW.
+Subwords, contractions and punctuation join before neighboring lexical centers
+produce word spans inside speech segments. Missing, collapsed, backwards,
+out-of-range or implausible-rate spans are rejected; repeated three-grams are
+hallucination guards. Whisper probabilities are not calibrated Apple confidence
+and are not presented as such. Bracketed events do not become spoken words.
 
-## Deliberate platform differences
+The cache key includes source PCM hash, model hash and decoding/parser options;
+32successful sources are retained. Failed-source suppression prevents repeated
+inference every section; a new source or restart permits another attempt.
+A pending/unavailable status and bounded error are visible on the display and
+in ready.json. Failure preserves the incumbent bank, music and images. Startup
+has a clearly pending conservative whole8-second statement until a reliable
+text bank is ready; it does not claim recognized word selection. No new word
+cuts are published on recognition/alignment failure.
 
-There is no transcription/NaturalLanguage or semantic word-interest selection.
-The acoustic fallback prefers audible envelope variation over silence/flat tone
-within eight source regions. It cannot recognize cool words, negation, complete
-spoken lines or syllables. The intro states a selected cut; it does not promise
-the Swift complete-line introduction or complete spoken-line outro.
+## Text and arrangement
 
-RMS onset/take-energy measurements approximate the upstream speech-band onset
-and classified kick/snare/ghost timing field. They do not reproduce its filters,
-semantic reorder permission, word hierarchy, valley gate snapping, full DSP,
-echo-throw/reverse recipes, exact MusicRNG sequence or performance-memory reuse.
-Manual pads retain complete chronological source coverage rather than being
-replaced by the desktop semantic vocabulary. Physical listening, swing feel,
-pad colour/latency and perceived line interest require human acceptance.
+The MIT English NLTK averaged-perceptron model provides local lexical classes.
+The portable scorer includes the upstream function/discourse lists, seven
+weighted evocative lexicon categories, prefix/inflection/false-friend rules,
+name/vocative, number and long-content-word weighting, and line shape scoring.
+Contiguous recognition segments join into complete sentences. Audio boundaries
+snap within20ms to local quiet windows and inactive units are rejected.
 
-## Validation
+The strongest three complete lines form the candidate pool. A selected line
+and its strongest-word anchors stay stable for four64-beat takes; the next
+candidate then rotates in. The unique vocabulary includes its complete line,
+meaningful words, indivisible grammatical groups and contiguous mixed cuts,
+with at most eight cuts to match the fixed native automatic PCM capacity.
+Signature/response prefer the strongest text weights; source order breaks
+manual layout ties. Intro and outro state the complete selected line.
 
-Run build-native.sh, the complete unittest suite and private-asset
-rehearse-standalone.py. Inspect native960x160FX/Cuts/Help renders. The ABI2 source,
-x86 engine and manifest are a mandatory pair. Host memory/audio captures do not
-establish device ALSA/xruns, physical input/display, restart or default-boot gates;
-follow STANDALONE_INSTALL.md before calling a candidate installed.
+Names and uncertain capitalization conservatively protect their full sentence.
+Negation/predicate, determiner/noun, pronoun/verb and number/noun groups remain
+indivisible; contractions are atoms. Protected pieces play intact and reserve
+enough time before later onsets. A fully protected sentence uses conservative
+whole-line statements. POS is **not NER**; this can protect too much and does not
+promise complete semantic safety or perfect transcription.
+
+Four two-bar hook skeletons and five loop feels drive the16-bar statement,
+groove, build, breakdown and outro. Additional stabs prefer gaps in measured
+drum energy attacks; response skeletons include backbeat steps. Regular stabs
+use1/2/4sixteenth gates with6ms lead and60ms minimum where the source permits.
+Onset analysis retains up to30ms soft lead plus2ms preroll. Quarter steps stay
+fixed; offbeats move consistently up to24ms. Native analysis stays allocation,
+file and inference free; every replacement publishes at64-beat boundaries.
+
+## Pads and ownership
+
+Chops uses Ableton's Slicing layout: four pads left-to-right, ascending through
+the entire left32, then from the bottom through right32. One unique vocabulary
+cut occupies one pad; unused pads are dark and inert. Drums uses16distinct
+source ranges in the bottom-left4x4; Shift+pad chooses a catalog take. Film has
+one lit anchor pad. Manual and Auto share the same bank and physical mapping.
+Chops is held-to-play, completing once if held and stopping on release.
+
+Auto also accepts manual playing. Mode changes gate only future automated
+onsets; held releases retain onset-owned bank/source identity across selection,
+mode, editing and bank changes. Successful native automatic cut/pitch triggers
+alone flash the exact pad red, bounded by120ms/source/gate. MIDI feedback runs
+at50Hz independently of the10Hz display. Continuous Drum/Film playback does
+not invent a pad trigger. Manual/rejected/stale events cannot create red flashes.
+
+## Differences and validation
+
+Linux replaces Apple Speech and NaturalLanguage; DTW is approximate alignment,
+not forced phonetic alignment. Acoustic onset and drum novelty fields are
+portable approximations, not the desktop classified kick/snare field. This
+port does not transplant the desktop's cross-film motif crate, full DSP,
+echo/reverse recipes or exact random sequence. Editable ranges share the source;
+editing a live vocabulary pins its semantic line until new footage arrives.
+
+Run build-native.sh, the full unittest suite, check-speech-artifacts.py and the
+private-asset rehearsal; inspect960x160FX/Cuts/Help and LED mapping. Host rehearsal
+on ARM validates honest unavailable-worker retention. Actual archival DTW/PCM
+replay validates semantic cuts and native scoring separately. Neither replaces
+concurrent device inference/audio/USB qualification, physical listening or human
+acceptance. ABI2 source/native/model/tools/licenses must be staged coherently.

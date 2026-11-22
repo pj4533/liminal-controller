@@ -24,17 +24,15 @@
 - Drums Shift+pads select catalog entry1–64 in either mode; arrows toggle to entries65–100.
   Dark/unassigned pads do nothing. Repeat56 requests a different tempo-compatible
   take. Selection queues preparation for the next64-beat boundary; it does not
-  cut the current full take. Drums pads in both modes repeat four fixed PCM cuts across
-  all64pads (pad index modulo4), with release. These are source slices, not
-  promised kick/snare labels or complete-loop latches.
-- Chops in either mode: up to64 consecutive held cuts walk through the complete available
-  phrase in source order, left to right then up the grid. Each cut appears once;
-  only populated pads light and unused pads do nothing.
-  Hold a pad to play its cut once to the end; releasing it stops that cut with
-  the native256-frame (5.8ms) click-free release. It never loops while held.
-  Film in either mode: each pad triggers the current complete8second anchor line.
-  They launch immediately, without forced sixteenth quantization. Pad release
-  leaves the Film anchor sounding; Delete118 releases all manual voices.
+  cut the current full take. Normal pads play16distinct cuts in the bottom-left
+  4x4 Drum Rack layout, with release; no kick/snare classification is claimed.
+- Chops in either mode uses Ableton Slicing order: four pads across ascending
+  all left32, then from bottom through right32. Up to eight unique text-aware
+  cuts occupy the bank; unassigned pads stay dark and silent. Hold to play once;
+  releasing stops with the native256-frame click-free release. It never loops.
+  Auto also triggers independently; both modes share this same vocabulary.
+  Film has one lit bottom-left pad for its8-second one-shot anchor; release
+  leaves it sounding. Delete118 releases manual voices.
 - Help81 opens controls/collection credit; press again to close. The asset JSON
   manifests retain full individual work, film, source URL and license credits.
 - Settings30 opens recovery. Lower1 selects Stillwater,2 Stock,3 old Controller;
@@ -56,7 +54,7 @@ Live archive audio (standalone-native live sourcing update):
   IA LOADING/DOWNLOADING/DECODING/READY or ERROR appears along the bottom;
   NEXT16 means a source is waiting for the next64-beat boundary.
 - Select Chops (top5 / CC106), Shift+lower5 to Manual. Populated pads expose consecutive
-  cuts covering the complete prepared window; each onset plays the current prepared film PCM immediately.
+  unique text-aware vocabulary cuts; each onset plays the current prepared film PCM immediately.
   Shift+pad selects a cut silently. On the Device/Note Cuts page (lower7/8), encoder6 changes Start,
   encoder7 Length, encoder8 selects among populated cuts. Start/length steps are50ms per tick;
   hold Shift for5ms. Editing is audible on the next pad trigger immediately.
@@ -68,9 +66,10 @@ Live archive audio (standalone-native live sourcing update):
   manual voices; Stop hushes everything. Source changes still happen at16bars,
   so press Play to advance a newly queued source when transport is stopped.
 
-These are energy/silence suggestions and hands-on PCM start/length editing.
-There is no transcription, semantic dialogue search, moving-video display or
-claim that every suggested cut contains speech. Only explicitly public-domain
+Local whisper.cpp transcription and deterministic word/line interest run on
+the preparation worker; no cloud inference. SPEECH ANALYZING/TEXT READY or
+UNAVAILABLE appears on the bottom row. Pending/failure retains the incumbent.
+Word timestamps and name protections remain approximate. No moving-video display. Only explicitly public-domain
 Prelinger metadata with a bounded audio/media derivative is eligible. Requests
 can fail or take minutes; the active source continues playing. Three decoded
 windows are cached on disk; the latest valid window is restored after reboot.
@@ -86,7 +85,7 @@ range, with the same .6 peak ceiling.
 
 Automatic successful native onsets briefly mark their pad red (at most120ms,
 shorter for a shorter gate/source). Manual notes retain their held colour and
-never create automatic red feedback. Chops maps the exact chronological cut;
+never create automatic red feedback. Chops maps the exact unique vocabulary cut;
 melodic channels map the actual MIDI pitch in the current octave, including
 its duplicate positions. Continuous Drum/Film playback has no invented pad trigger and does not flash a proxy pad. Feedback
 is polled at50Hz independently of the10Hz display, is channel/source-revision
