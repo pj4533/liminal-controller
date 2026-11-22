@@ -8,7 +8,7 @@ import sys
 import unittest
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'src'))
 from channel_fx import defaults,parameters,pages,page_parameters
-from sampler import Sampler,Event,Command,SR
+from sampler import Sampler,Event,Command,Bank,SR
 from standalone import Instrument
 from standalone_render import fit
 
@@ -104,6 +104,35 @@ class FxTests(unittest.TestCase):
             out=s.render(SR*2);self.assertTrue(all(math.isfinite(x) and abs(x)<1 for x in out));self.assertEqual(s.status()['overflow'],0)
             s.command(2);s.render(1323);self.assertEqual(max(map(abs,s.render(SR))),0)
             s.command(1);self.assertEqual(max(map(abs,s.render(SR))),0)
+        finally:s.close()
+    def test_native_controls_settle_exactly_without_subnormals(self):
+        # Read-only prefix mirrors native.c; no audio thread runs in this test.
+        # Inspect actual engine storage rather than inferring bypass from PCM.
+        class Sample(C.Structure):
+            _fields_=[('pcm',C.c_void_p),('frames',C.c_int)]
+        class Voice(C.Structure):
+            _fields_=[('integers',C.c_int*6),('event',Event),('pos',C.c_double),('env_body',C.c_float*3)]
+        class Prefix(C.Structure):
+            _fields_=[('samples',Sample*256),('banks',Bank*4),('state',C.c_int*4),
+                      ('queue',Command*1024),('read_write',C.c_uint*2),('voices',Voice*64),
+                      ('transport_modes',C.c_int*18),('levels',C.c_float*20),
+                      ('target',C.c_float*24),('value',C.c_float*24)]
+        s=Sampler(ROOT/'.build/engine.so')
+        try:
+            native=Prefix.from_address(s.ptr)
+            self.assertEqual(list(native.value),[C.c_float(p.default if p.id not in (8,12) else 0).value for p in parameters(0)])
+            for p in parameters(0):s.command(16,0,p.id,event=Event(gain=p.high))
+            s.render(SR)
+            for p in parameters(0):s.command(16,0,p.id,event=Event(gain=0))
+            s.render(SR*4)
+            for p in parameters(0):
+                if p.id in (9,22):continue  # selectors use their exact integer target
+                with self.subTest(parameter=p.id):
+                    self.assertEqual(native.value[p.id],native.target[p.id])
+                    self.assertTrue(native.value[p.id]==0 or abs(native.value[p.id])>=2**-126)
+            self.assertTrue(all(native.value[p]==0 for p in (0,1,3,5,6,7,8,10,12,15,16,18,19,20,21,23)))
+            s.command(2);s.render(SR)
+            self.assertTrue(all(v==0 or abs(v)>=2**-126 for v in native.value))
         finally:s.close()
     def test_disabling_and_reenabling_wet_effects_cannot_resurrect_history(self):
         s=Sampler(ROOT/'.build/engine.so')

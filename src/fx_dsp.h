@@ -52,7 +52,13 @@ static void fx_control(Fx *f,int ch,float beat){
 }
 static void fx_process(Fx *f,int ch,float beat,float input[2],float out[2],float legacy_tone){
  FxMemory *m=&f->m;float *v=f->value;
- for(int p=0;p<NP;p++)if(p!=9&&p!=22)v[p]+=(f->target[p]-v[p])*.001133f; /* 20ms */
+ /* 20ms smoothing, with an exact endpoint. In particular a zero target must
+    not leave a persistent subnormal control (FTZ is not assumed). Snap also
+    when float rounding prevents further movement at nonzero targets. */
+ for(int p=0;p<NP;p++)if(p!=9&&p!=22){
+  float delta=f->target[p]-v[p],next=v[p]+delta*.001133f;
+  v[p]=(fabsf(delta)<=1e-6f||next==v[p])?f->target[p]:next;
+ }
  if((m->clock&31)==0)fx_control(f,ch,beat);
  float x[2];
  for(int c=0;c<2;c++){

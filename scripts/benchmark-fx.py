@@ -25,7 +25,14 @@ try:
     for _ in range(100):s.lib.lm_render(s.ptr,out,256)
     results['warmup_voices']=s.status()['voices']
     if results['warmup_voices']!=64:raise AssertionError('64-voice load required')
-    for name,rapid in (('all_fx_64_voices',False),('all_fx_64_voices_rapid_parameters',True)):
+    for name,rapid in (('all_fx_64_voices',False),('all_fx_64_voices_rapid_parameters',True),('effects_returned_to_zero_64_voices',False)):
+        if name.startswith('effects_returned'):
+            for ch in range(6):
+                for descriptor in parameters(ch):
+                    value=0 if descriptor.id in (1,3,4,5,7,8,12,16,19,20,21,23) else descriptor.default
+                    s.command(16,ch,descriptor.id,event=Event(gain=value))
+            # Four seconds formerly left subnormal zero-bound smoother controls.
+            for _ in range(math.ceil(SR*4/256)):s.lib.lm_render(s.ptr,out,256)
         timings=[]
         for block in range(a.blocks):
             if rapid:
@@ -35,8 +42,9 @@ try:
                         value=descriptor.high if block%2 else descriptor.low
                         s.command(16,ch,descriptor.id,event=Event(gain=value))
             start=time.perf_counter_ns();s.lib.lm_render(s.ptr,out,256);timings.append((time.perf_counter_ns()-start)/1e6)
-        timings.sort();results[name]=dict(blocks=len(timings),p50_ms=statistics.median(timings),p95_ms=timings[int(len(timings)*.95)],p99_ms=timings[int(len(timings)*.99)],maximum_ms=max(timings),over_deadline=sum(t>256/SR*1000 for t in timings))
+        timings.sort();results[name]=dict(blocks=len(timings),p50_ms=statistics.median(timings),p95_ms=timings[int(len(timings)*.95)],p99_ms=timings[int(len(timings)*.99)],maximum_ms=max(timings),over_deadline=sum(t>256/SR*1000 for t in timings),p99_headroom_percent=100*(1-timings[int(len(timings)*.99)]/(256/SR*1000)))
     s.command(2);start=time.perf_counter_ns();s.lib.lm_render(s.ptr,out,256);results['stop_clear_ms']=(time.perf_counter_ns()-start)/1e6
-    s.render(1323);results['stopped_peak']=max(map(abs,s.render(4096)));results['status']=s.status();results['deadline_ms']=256/SR*1000;results['machine']='host memory-render; no ALSA/USB/device scheduling claim'
+    s.render(1323);results['stopped_peak']=max(map(abs,s.render(4096)));results['status']=s.status();results['deadline_ms']=256/SR*1000;results['machine']='memory-render; scheduling outliers reported, actual ALSA/USB qualification separate'
+    assert results['stopped_peak']==0 and results['status']['voices']==0 and results['status']['overflow']==0,results
 finally:s.close()
 a.out.parent.mkdir(parents=True,exist_ok=True);a.out.write_text(json.dumps(results,indent=2)+'\n');print(json.dumps(results))

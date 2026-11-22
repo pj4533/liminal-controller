@@ -76,7 +76,7 @@ def render(ui,status,background):
                 value=ui.level[ch] if p.id==0 else ui.effects[ch][p.id]
                 values.append((p.label,p.display(value),(value-p.low)/(p.high-p.low)))
         else:
-            values=[('CUTS','',0),('SHIFT','FINE',0),('COARSE','50 MS',0),('FINE','5 MS',0),('PAD PLAY','HOLD',0)]
+            values=[('CUTS','',0),('SHIFT','FINE',0),('COARSE','50 MS',0),('FINE','5 MS',0),('PAD PLAY','HOLD' if ch==4 else 'ONE SHOT',0)]
             if bank['cuts']:
                 index=min(ui.chop,len(bank['cuts'])-1);start,length=ui.cut(bank,index);total=len(bank['pcm'][1])//2
                 values.extend((('START','%.2f S'%(start/44100),start/max(1,total)),('LENGTH','%.2f S'%(length/44100),length/max(1,total)),('PAD','%d/%d'%(index+1,len(bank['cuts'])),(index+1)/len(bank['cuts']))))

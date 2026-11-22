@@ -309,3 +309,20 @@ three overlays and six short comparison WAVs. No private media or asset catalog
 is committed. Independent review precedes a later paired source/native rollout.
 The existing private delta helper assumes an unchanged binary/file set and needs
 adaptation, followed by the full device acceptance in STANDALONE_INSTALL.md.
+
+
+Review corrections (candidate, not deployed): control smoothing now snaps to its
+exact target below1e-6 parameter units or when float rounding stalls. A read-only
+native-storage regression verifies all continuous controls settle exactly after
+four seconds, all zero targets are zero, and Stop leaves no subnormal controls.
+Film Cuts explicitly says ONE SHOT; Chops says HOLD. The benchmark also measures
+64 voices after effects return to zero, reporting p99 headroom without imposing
+a generic host scheduling threshold. Actual x86 ALSA/USB qualification remains
+required on the device before acceptance.
+
+`python3 -m unittest discover -s tests -v`:149passed,0failed,6.762s.
+Host and Zig x86 builds pass strict warnings. ARM memory benchmark (2000blocks
+per phase): static p99.452ms, rapid-controls p99.513ms, returned-to-zero p99.368ms,
+max3.247ms, zero deadline overruns; deadline5.805ms. Stop clear.461ms, stopped
+peak0, voices0, overflow0. Evidence: private fx-reviewfix-tests.log and
+fx-reviewfix-benchmark-host.json. These are host results, not x86/ALSA claims.

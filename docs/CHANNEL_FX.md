@@ -73,7 +73,9 @@ monos its low side. Dry source gains, programmes and normalization are preserved
 
 Fixed buffers allocate at engine creation (roughly7MiB for six FX paths).
 No allocation, decoding, files or network run in rendering. Continuous controls
-smooth with a20ms time constant; filter/gain/feedback coefficients update every
+smooth with a20ms time constant and snap to exact targets within1e-6 parameter
+units or when floating-point rounding stalls movement; zero-bound controls never
+retain subnormal values. Filter/gain/feedback coefficients update every
 32samples. Very quiet filter/feedback states are floored below1e-20 to prevent
 subnormal idle-tail arithmetic; a64bit sample counter avoids periodic comb-index
 discontinuities. Division selectors are discrete. Disabled wet processors stop writing
@@ -86,7 +88,7 @@ behavior. PCM-bank retirement, voice admission and onset tokens are unchanged.
 
 Build both engines and run tests/rehearsal as described in STANDALONE_VALIDATION.
 `scripts/benchmark-fx.py` measures host block distributions under64voices/all FX
-and rapid edits. `scripts/rehearse-fx.py` exports every page at min/max values,
+and rapid edits, then effects returned to zero after four seconds. `scripts/rehearse-fx.py` exports every page at min/max values,
 overlays, six short private real-source comparisons and PCM measurements, with
 an optional previous engine baseline. Neither tool opens hardware/network.
 These measurements do not substitute for device timing or human listening.
