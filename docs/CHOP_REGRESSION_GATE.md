@@ -45,7 +45,17 @@ correct physical Ableton notes, all unused notes dark/inert, independent held
 release, and at least2 non-line automatic pad identities. Auto slice PCM must
 match Manual source ranges exactly. The JSON report records source/DTW/engine
 hashes, labels/ranges/physical notes/audio identities/revision/current readiness.
-No synthetic cut injection exists in this executable.
+No synthetic cut injection exists in this executable. At the final native command
+boundary, the gate asserts actual bank/revision/sample/offset/duration against
+that physical pad's intended cut. For every pad it creates two fresh native
+engines with identical initial DSP state and warmup: production Manual dispatch
+versus direct intended-range reference playback. Captured float audio must match
+exactly, be finite/audible, have a distinct actual capture hash, and naturally
+terminate before note release. Expected source hashes alone are not audio proof.
+Fault tests reject whole-phrase substitution, wrong offsets and wrong durations;
+the audio oracle also rejects whole-phrase substitution with the command check
+disabled in that test. The earlier nonzero-only audio gate falsely accepted that
+mutation; its earlier acceptance report is superseded by this stricter gate.
 
 Also exercise cold cached startup and uncached worker completion, stopped Manual,
 held defer/release, playing64-beat publication, source replacement, stale worker
@@ -58,7 +68,9 @@ Device gate: pair source/native/model hashes; run the full suite and real-source
 memory gate on actual x86, then actual ALSA/USB at master zero with fresh local
 inference while progress continues and no new xruns/overflow. Require the actual
 prepared text bank to become CURRENT; dispatch every real used pad via the same
-MIDI path, write its actual LEDs, exercise overlap/release/Auto red onsets,
+MIDI path and validate final dispatched ranges. Run the same fresh memory-engine
+audio oracle against that actual CURRENT bank while ALSA stays master zero;
+continue USB/display/health pumping during capture. Write its actual LEDs, exercise overlap/release/Auto red onsets,
 Echo/Reverb/Stop, then normal stopped healthy60seconds and preserved media.
 Use fresh native snapshots after display/pump work. Never accept next_ready alone.
 Human listening, visible pad colours and feel remain separate acceptance. These
