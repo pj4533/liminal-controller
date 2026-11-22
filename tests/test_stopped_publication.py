@@ -35,6 +35,21 @@ class StoppedPublicationTests(unittest.TestCase):
         ui=self.ui();self.engine.command(1);self.engine.render(1);ui.tick()
         self.engine.render(638);self.assertEqual(self.engine.status()['bank'],self.first)
         self.engine.render(2);ui.tick();self.assertEqual(ui.current['revision'],1)
+    def test_useful_default_is_not_discarded_before_unproven_restored_source(self):
+        ui=self.ui();ui.archive_dirty=True
+        prepared=self.bank(1);prepared['dialogue']=dict(line='Verified default')
+        ui.pending=concurrent.futures.Future();ui.pending.set_result(prepared)
+        ui.tick();self.assertIsNotNone(ui.next_slot)
+        self.engine.render(1);ui.tick()
+        self.assertEqual(ui.current['revision'],1);self.assertTrue(ui.archive_dirty)
+    def test_playing_publication_does_not_leave_stopped_permission_on_reused_slot(self):
+        self.engine.command(1);self.engine.render(1)
+        slot=self.engine.install(self.bank(1));self.engine.command(17,slot);self.engine.render(640)
+        self.assertEqual(self.engine.status()['bank'],slot)
+        self.engine.install(self.bank(2));self.engine.render(640)
+        current=self.engine.status()['bank'];self.engine.command(2);self.engine.render(2048)
+        reused=self.engine.install(self.bank(3));self.assertEqual(reused,slot)
+        self.engine.render(1);self.assertEqual(self.engine.status()['bank'],current)
     def test_failed_worker_keeps_current_source_and_reports_error(self):
         ui=self.ui();ui.pending=concurrent.futures.Future();ui.pending.set_exception(ValueError('No reliable aligned speech'))
         ui.tick();self.engine.render(32);self.assertEqual(ui.current['revision'],0);self.assertIn('No reliable',ui.error)

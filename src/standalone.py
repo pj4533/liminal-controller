@@ -63,7 +63,7 @@ class Instrument:
                 prepared=self.pending.result()
                 if self.queued_drum is not None:
                     self.pending=None;self.request_next(self.queued_drum);return status
-                if self.archive_dirty:
+                if self.archive_dirty and (self.current.get('dialogue') or not prepared.get('dialogue')):
                     self.pending=None;self.request_next(refresh=True);return status
                 slot=self.engine.install(prepared)
                 if slot is not None:
