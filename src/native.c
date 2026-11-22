@@ -100,7 +100,7 @@ static void commands(Engine *s){
    case 3:if(ch>=0&&ch<NC){s->manual[ch]=c.b;if(c.b)s->flash_left[ch]=0;}break;
    case 4:if(ch>=0&&ch<NC)s->level[ch]=s->fx[ch].target[0]=fminf(1,fmaxf(0,c.event.gain));break;
    case 5:if(ch>=0&&ch<NC){s->muted[ch]=c.b;if(c.b)s->flash_left[ch]=0;}break;
-   case 6:if(ch>=0&&ch<NB&&atomic_load(&s->state[ch])==1){atomic_store(&s->state[ch],2);if(s->current<0){s->current=ch;s->event=s->position=0;}else s->next=ch;}break;
+   case 6:if(ch>=0&&ch<NB&&atomic_load(&s->state[ch])==1){atomic_store(&s->state[ch],2);if(s->current<0){s->current=ch;s->event=s->position=0;}else{s->next=ch;s->stopped_next=-1;}}break;
    /* Admission validated current/revision and pinned the onset's source. A
       boundary after admission must not discard that already accepted note. */
    case 7:if(c.event.channel>=0&&c.event.channel<NC){s->hush=0;note(s,c.event,c.a,c.id);}atomic_fetch_sub(&s->state[c.a],4);break;
@@ -135,7 +135,7 @@ void lm_render(Engine *s,float *out,int count){
   for(int ch=0;ch<NC;ch++)if(s->flash_left[ch]>0)s->flash_left[ch]--;
   if(s->playing&&s->current>=0){
    Bank *b=&s->banks[s->current];
-   if(s->position>=b->length){s->position=s->event=0;if(s->next>=0){s->current=s->next;s->next=-1;b=&s->banks[s->current];}}
+   if(s->position>=b->length){s->position=s->event=0;if(s->next>=0){s->current=s->next;s->next=s->stopped_next=-1;b=&s->banks[s->current];}}
    while(s->event<b->count&&b->events[s->event].frame<=s->position){Event e=b->events[s->event++];if(!s->manual[e.channel])note(s,e,s->current,0);}
    s->position++;
   }
