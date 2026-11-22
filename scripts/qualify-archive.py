@@ -56,6 +56,11 @@ def main():
         assert before!=after
         ui.event(dict(kind='note',number=38,value=100));manual=pump(.05);assert manual['voices']>0
         report['manual']={'before':before,'after':after,'status':manual}
+        cuts=ui.current['cuts'];assert cuts[0][0]==0
+        assert all(s+n==next_s for (s,n),(next_s,_) in zip(cuts,cuts[1:]))
+        assert cuts[-1][0]+cuts[-1][1]==len(ui.current['pcm'][1])//2
+        assert sum(bool(v) for v in ui.leds().values())==len(cuts)
+        report['coverage']={'pads':len(cuts),'frames':sum(n for _,n in cuts),'unique':len(set(cuts))==len(cuts)}
         # Render the exact downloaded PCM through a separate native memory engine.
         # This instance never opens ALSA; actual playback above remains master-zero.
         memory=Sampler(home/'engine.so')
@@ -68,9 +73,28 @@ def main():
         # Memory-render/signal measurement deliberately pauses this harness.
         # Exclude that harness-only gap from the MIDI polling distribution.
         last=time.monotonic()
+        # Keep Chops Manual through three real full-take boundaries. Requests
+        # are observed at the control/worker boundary; network may keep cache.
+        requests=[];request=worker.request
+        def observed_request():
+            accepted=request();requests.append(accepted);return accepted
+        worker.request=observed_request
+        transitions=[];previous=ui.current['revision'];transition_deadline=time.monotonic()+200
+        while len(transitions)<3 and time.monotonic()<transition_deadline:
+            pump(.1)
+            if ui.current['revision']!=previous:
+                previous=ui.current['revision'];transitions.append({'revision':previous,'archive_id':ui.current['archive_id'],'pads':len(ui.current['cuts'])})
+                assert ui.manual[4]
+        assert len(transitions)==3 and len(requests)>=3
+        report['manual_transitions']=transitions;report['transition_requests']=requests
+        worker.request=request
         # A failed subsequent fetch must not replace the active PCM or stop ALSA.
-        identity=ui.current['archive_id'];oldfetch=worker.fetcher;worker.fetcher=lambda *_:(_ for _ in ()).throw(OSError('qualification offline'))
+        oldfetch=worker.fetcher;worker.fetcher=lambda *_:(_ for _ in ()).throw(OSError('qualification offline'))
         while worker.thread and worker.thread.is_alive():pump(.05)
+        pump(.1)
+        settle=time.monotonic()+70
+        while ui.archive and ui.current['archive_id']!=ui.archive['credit']['sha256'] and time.monotonic()<settle:pump(.1)
+        identity=ui.current['archive_id']
         worker.request()
         while worker.thread.is_alive():pump(.05)
         assert worker.error and ui.current['archive_id']==identity;report['failure_retention']={'error':worker.error,'archive_id':identity,'status':engine.status()};worker.fetcher=oldfetch

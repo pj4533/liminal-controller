@@ -30,8 +30,11 @@ opaque controls and text stay readable. Keyless Cleveland CC0 images and a
 provenance-checked curated Prelinger film excerpt are staged for offline use.
 Push also discovers public-domain Prelinger newsreels, downloads bounded audio
 derivatives and prepares fresh48second windows in the background. Repeat on
-Chops/Film requests new footage; automatic refresh runs every180seconds. Manual
-Chops exposes editable start/length and immediate pad audition from prepared PCM.
+Chops/Film requests new footage; automatic refresh requests run at every64-beat take transition in both modes,
+with a180second background retry. Manual
+Chops exposes unique chronological cuts over the entire prepared phrase, up to64
+populated pads, editable start/length and immediate pad audition from prepared PCM.
+Unused pads remain unlit/inert.
 New source banks publish at64beats; failures preserve the current source.
 No transcription or semantic dialogue selection is implemented.
 No full-screen reactive visualizer is added. Network failures retain the cache.

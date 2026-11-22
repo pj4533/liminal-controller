@@ -50,7 +50,7 @@ def render(ui,status,background):
     else:
         ch=ui.selected;fx=ui.effects[ch];labels=['LEVEL '+str(round(ui.level[ch]*100)),'TONE '+str(round(fx[0]*100)),'ECHO '+str(round(fx[1]*100)),'ROOM '+str(round(fx[2]*100)),'PAN '+str(round(fx[3]*100)),'','','']
     if not ui.mix and ui.selected in (4,5) and bank['cuts']:
-        start,length=ui.cut(bank,ui.chop);labels[5:] = ['START %.2fS'%(start/44100),'LENGTH %.2fS'%(length/44100),'PAD %d'%(ui.chop+1)]
+        start,length=ui.cut(bank,min(ui.chop,len(bank['cuts'])-1));labels[5:] = ['START %.2fS'%(start/44100),'LENGTH %.2fS'%(length/44100),'PAD %d/%d'%(min(ui.chop+1,len(bank['cuts'])),len(bank['cuts']))]
     for i,label in enumerate(labels):c.text(i*120+7,99,label,INK)
     c.rect(0,126,960,34,DARK)
     drum=ui.catalog[bank['drum']]['name'].replace('AJ_HALL_DRUM_BREAK_','')
@@ -69,7 +69,7 @@ def render(ui,status,background):
     elif ui.help:
         c.rect(0,28,960,132,DARK);c.text(12,38,'LIMINAL / LOCAL LO-FI / NO MAC REQUIRED',INK,2)
         c.text(12,62,'SHIFT+LOWER AUTO/MANUAL. MELODIC PADS: RIGHT 1 / UP 3 SCALE DEGREES.')
-        c.text(12,79,'CHOPS: PADS 1-8. SHIFT+PAD SELECT. KNOBS 6 START / 7 LENGTH / 8 PAD. SHIFT: FINE.')
+        c.text(12,79,'CHOPS: LIT PADS IN SOURCE ORDER. SHIFT+PAD SELECT. KNOBS 6 START / 7 LENGTH / 8 PAD. SHIFT: FINE.')
         c.text(12,96,'CHOPS/FILM REPEAT FETCHES FRESH IA. NEW SOURCE AT 16 BARS. STOP HUSHES. NO TRANSCRIPTION.')
         credit=background.credits[0] if background.credits else {}
         c.text(12,116,'IMAGES: CLEVELAND MUSEUM / CC0 / '+str(credit.get('title','CACHE UNAVAILABLE'))[:60],BRASS)

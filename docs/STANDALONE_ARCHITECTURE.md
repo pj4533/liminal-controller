@@ -52,9 +52,16 @@ with the existing licensed FFmpeg. Three immutable windows occupy at most51MiB
 of decoded cache; one source/temporary decode adds at most41MiB. A one-result
 mailbox and at most30 recent identifiers bound pending state. Failure preserves
 the current bank; startup retains the bundled fallback and restores the latest
-hash-validated live cache in the background. Ongoing requests run every180seconds
+hash-validated live cache in the background. Ongoing requests run at each64-beat bank transition regardless of Auto/Manual,
+with a180second background retry
 or on Repeat with Chops/Film selected. No network listener is opened.
 
+Suggested cuts partition the full decoded window into up to64 consecutive
+regions, aiming for750ms and preferring nearby low-energy boundaries. There are
+no gaps, overlaps or repeated pad assignments. The offline fallback exposes its
+complete current8second line. Manual offsets address all regions without extra
+PCM copies; eight automatic slice slots sample across that bank within the
+existing native capacity. Only populated Manual Chops pads light or trigger.
 The composition worker copies suggested energy/silence cuts into normal banks;
 fresh footage and automatic edits publish only at64-beat boundaries. Manual
 chops address the full immutable film PCM using Event.frame as source offset

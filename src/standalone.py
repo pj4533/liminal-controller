@@ -47,7 +47,8 @@ class Instrument:
             prepared=self.engine.banks[bank][1];text='' if prepared['archive_id'] else self.ledger.commit(prepared['line_index'],prepared['revision'])
             if text:self.pool.submit(self.ledger.save,text)
         if bank>=0 and bank!=self.last_bank:
-            self.last_bank=bank;self.edits={k:v for k,v in self.edits.items() if k[0]==self.cut_source(self.current)};self.edit_gains={k:v for k,v in self.edit_gains.items() if k[0]==self.cut_source(self.current)};self.next_slot=None;self.request_next()
+            self.last_bank=bank;self.chop=min(self.chop,max(0,len(self.current['cuts'])-1));self.edits={k:v for k,v in self.edits.items() if k[0]==self.cut_source(self.current)};self.edit_gains={k:v for k,v in self.edit_gains.items() if k[0]==self.cut_source(self.current)};self.next_slot=None;self.request_next()
+            if self.archive_worker:self.archive_worker.request()
         if self.pending is not None and self.pending.done():
             try:
                 prepared=self.pending.result()
@@ -82,7 +83,8 @@ class Instrument:
             if slot not in self.engine.banks:return
             ch=self.selected;pad=number-36;bank=self.engine.banks[slot][1]
             if ch==4:
-                self.chop=pad%8
+                if pad>=len(bank['cuts']):return
+                self.chop=pad
                 if self.shift:return
             if not self.manual[ch]:
                 if ch==0:
@@ -94,15 +96,14 @@ class Instrument:
             if ch in (0,4,5):
                 if ch==0:local=bank['drumcuts'][pad%4];gain=bank['events'][0]['gain']*.9
                 elif ch==4:
-                    if len(bank['pcm'])<10:return
-                    local=2+pad%8;gain=self.edit_gains.get((self.cut_source(bank),pad%8),bank['chop_gains'][pad%8])
+                    local=1;gain=self.edit_gains.get((self.cut_source(bank),pad),bank['chop_gains'][pad])
                 else:
                     if len(bank['pcm'])<10:return
                     local=bank['anchor'];gain=.25
                 # Film/chops are immediate one-shots. Release does not truncate them.
                 frames=len(bank['pcm'][local])//2;offset=0
                 if ch==4:
-                    offset,frames=self.cut(bank,pad%8);local=1
+                    offset,frames=self.cut(bank,pad);local=1
                 event=Event(frame=offset,channel=ch,sample=192+slot*16+local,gate=frames,speed=1,gain=gain*value/127,attack=128,release=256)
                 if not self.onset(slot,bank['revision'],identity,event):return
                 if ch==0:self.held[number]=identity
@@ -121,7 +122,10 @@ class Instrument:
                 self.master=min(1,max(0,self.master+delta*.01));self.send(10,event=Event(gain=self.master));return
             knob=number-71;ch=self.selected
             if not self.mix and ch in (4,5) and knob in (5,6,7):
-                if knob==7:self.chop=(self.chop+(1 if delta>0 else -1))%8
+                count=len(self.current['cuts'])
+                if not count:return
+                self.chop=min(self.chop,count-1)
+                if knob==7:self.chop=(self.chop+(1 if delta>0 else -1))%count
                 else:
                     start,length=self.cut(self.current,self.chop);total=len(self.current['pcm'][1])//2
                     step=round(SR*(.005 if self.shift else .05))*delta
@@ -173,6 +177,8 @@ class Instrument:
         return self.edits.get((self.cut_source(bank),index),bank['cuts'][index])
     def leds(self):
         ch=self.selected
+        if ch==4:
+            return {n:(35 if self.manual[ch] and n-36<len(self.current['cuts']) else 0) for n in range(36,100)}
         if self.manual[ch] and ch in (1,2,3):
             active={pad_pitch(n,self.octave) for n in self.held}
             return {n:(37 if pad_pitch(n,self.octave) in active else 65 if pad_pitch(n,self.octave)%12==2 else 123 if pad_pitch(n,self.octave)%12 in (0,2,4,5,7,9,11) else 66) for n in range(36,100)}

@@ -23,7 +23,9 @@
   cut the current full take. Drums Manual pads repeat four fixed PCM cuts across
   all64pads (pad index modulo4), with release. These are source slices, not
   promised kick/snare labels or complete-loop latches.
-- Chops Manual: eight exact prepared one-shots repeat across all64pads (modulo8).
+- Chops Manual: up to64 consecutive one-shots walk through the complete available
+  phrase in source order, left to right then up the grid. Each cut appears once;
+  only populated pads light and unused pads do nothing.
   Film Manual: each pad triggers the current complete8second anchor line.
   They launch immediately, without forced sixteenth quantization. Pad release
   leaves these one-shots sounding; Delete118 releases all manual voices.
@@ -43,16 +45,18 @@ Live archive audio (standalone-native live sourcing update):
 
 - With Chops or Film selected, Repeat56 requests a fresh public-domain Prelinger newsreel
   source from Internet Archive. A serial background worker also requests material
-  every180seconds. Network and decoding continue while the instrument plays.
+  at each full64-beat take transition, including Manual, and every180seconds
+  as a background retry. Network and decoding continue while the instrument plays.
   IA LOADING/DOWNLOADING/DECODING/READY or ERROR appears along the bottom;
   NEXT16 means a source is waiting for the next64-beat boundary.
-- Select Chops (top5 / CC106), Shift+lower5 to Manual. Pads repeat eight
-  suggested cuts; each onset plays the current prepared film PCM immediately.
+- Select Chops (top5 / CC106), Shift+lower5 to Manual. Populated pads expose consecutive
+  cuts covering the complete prepared window; each onset plays the current prepared film PCM immediately.
   Shift+pad selects a cut silently. In Device/Note view, encoder6 changes Start,
-  encoder7 Length, encoder8 selects cut1–8. Start/length steps are50ms per tick;
+  encoder7 Length, encoder8 selects among populated cuts. Start/length steps are50ms per tick;
   hold Shift for5ms. Editing is audible on the next pad trigger immediately.
   Edits also enter the next automatic bank; previously sounding voices retain
-  their onset start/length. Cuts persist across takes using the same source.
+  their onset start/length. Edits persist while the source stays the same; each take transition requests
+  fresh footage. Slow/failed requests retain the current source.
 - Film pads still audition the prepared anchor (up to8seconds). Film view exposes
   the same chop editors; use Chops pads to audition those edits. Delete releases
   manual voices; Stop hushes everything. Source changes still happen at16bars,

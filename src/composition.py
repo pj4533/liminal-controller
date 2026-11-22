@@ -8,6 +8,7 @@ from pathlib import Path
 import random
 import re
 from sampler import SR,read_pcm
+from archive_worker import chops
 
 SCALES=((0,2,3,5,7,8,10),(0,2,3,5,7,9,10),(0,3,5,7,10))
 PATTERNS=((.5,1.25,2.75,5.5,7,10.25),(.75,2,2.75,6.5,7.25,10.5),(.5,1,3.5,6.75,8.5,11),(1.25,2.75,4,7.5,8.25,10.5),(.75,2.5,5.25,7.75,10.5))
@@ -106,21 +107,25 @@ def prepare(instruments,assets,catalog,revision,drum_index,bpm=69,seed=1042,line
                 events.append(instruments.event(3,other,offset+8,end-8,.52,padprogram,bpm))
             else:events.append(instruments.event(3,midi,offset+start,end-start,.52,padprogram,bpm))
     # Offline film bed and exact acoustic chops; decoded/prepared outside audio thread.
-    film_path=Path(assets)/'film.wav';banks=[pcm];film_credit='';chop_gains=[]
+    film_path=Path(assets)/'film.wav';banks=[pcm];film_credit='';chop_gains=[];cuts=[]
     if archive or film_path.exists():
         film,filmrate=(archive['pcm'],SR) if archive else read_pcm(film_path);banks.append(film)
         events.append(dict(frame=0,channel=5,sample=-2,gate=length,speed=filmrate/SR,gain=.16,attack=SR*.4,release=SR*.4))
-        chop_frames=min(round(SR*.55),len(film)//2//8)
+        line_start=min(round(line_index*8*SR),max(0,len(film)//2-1))
+        phrase=film if archive else film[line_start*2:min(len(film), (line_start+8*SR)*2)]
+        cuts=list(archive['cuts']) if archive else [(line_start+s,n) for s,n in chops(phrase,reject_silence=False)]
+        chop_gains=[chop_gain(film[start*2:(start+n)*2]) for start,n in cuts]
+        # Eight automatic voices retain the fixed native sample-slot budget.
+        # Manual pads address every cut directly in the complete source PCM.
         for i in range(8):
-            line_start=round(line_index*8*SR)
-            start,cut_length=archive['cuts'][i] if archive else (min(len(film)//2-chop_frames,line_start+round(i*.8*SR)),chop_frames)
-            cut=array.array('f',film[start*2:(start+cut_length)*2]);banks.append(cut);chop_gains.append(chop_gain(cut))
-            events.append(dict(frame=round((8+i*7)*SR*60/bpm),channel=4,sample=-(i+3),gate=cut_length,speed=1,gain=chop_gains[-1],attack=128,release=256))
-        banks.append(array.array('f',film[:8*SR*2] if archive else film[round(line_index*8*SR)*2:round((line_index+1)*8*SR)*2]));film_credit=archive['credit'] if archive else 'film.json'
+            index=min(len(cuts)-1,i*len(cuts)//8);start,cut_length=cuts[index]
+            banks.append(array.array('f',film[start*2:(start+cut_length)*2]))
+            events.append(dict(frame=round((8+i*7)*SR*60/bpm),channel=4,sample=-(i+3),gate=cut_length,speed=1,gain=chop_gains[index],attack=128,release=256))
+        banks.append(array.array('f',phrase[:8*SR*2]));film_credit=archive['credit'] if archive else 'film.json'
     # Four deterministic manual drum cuts, same PCM every trigger.
     drumcuts=[]
     for beat in (0,1,2,3):
         start=round(beat*len(pcm)/2/64);end=min(len(pcm)//2,start+round(SR*.45))
         drumcuts.append(len(banks));banks.append(array.array('f',pcm[start*2:end*2]))
     events.sort(key=lambda e:(e['frame'],e['channel'],e['sample']))
-    return dict(length=length,revision=revision,events=events,pcm=banks,drum=drum_index,bpm=bpm,programs=programs,pad=('Held '+piano[0],piano[1],.35,.85,.30,0),bass=bassprogram,tonic=tonic,scale=scale,film_credit=film_credit,drumcuts=drumcuts,line_index=line_index,anchor=10,chop_gains=chop_gains,archive_id=archive['credit']['sha256'] if archive else '',cuts=list(archive['cuts']) if archive else [(round((line_index*8+i*.8)*SR),chop_frames) for i in range(8)] if film_path.exists() else [])
+    return dict(length=length,revision=revision,events=events,pcm=banks,drum=drum_index,bpm=bpm,programs=programs,pad=('Held '+piano[0],piano[1],.35,.85,.30,0),bass=bassprogram,tonic=tonic,scale=scale,film_credit=film_credit,drumcuts=drumcuts,line_index=line_index,anchor=10,chop_gains=chop_gains,archive_id=archive['credit']['sha256'] if archive else '',cuts=cuts)

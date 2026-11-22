@@ -23,7 +23,7 @@ class ArchiveTests(unittest.TestCase):
         with self.assertRaises(ValueError):source_for(d)
     def test_energy_chops_bounded_and_silence_rejected(self):
         pcm=array.array('f',[.1,-.1])*SR*2
-        cuts=chops(pcm);self.assertEqual(len(cuts),8)
+        cuts=chops(pcm);self.assertEqual(len(cuts),3)
         self.assertTrue(all(0<=s<s+n<=len(pcm)//2 for s,n in cuts))
         with self.assertRaises(ValueError):chops(array.array('f',[0])*SR*4)
     def test_download_decode_cache_and_failure_retention(self):

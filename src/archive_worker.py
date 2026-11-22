@@ -31,20 +31,23 @@ def source_for(document):
     f=min(files,key=lambda f:(not f['name'].lower().endswith('.mp3'),int(f['size'])))
     return f,m
 
-def chops(pcm):
+def chops(pcm,reject_silence=True):
     """Energy/silence anchored starting suggestions; no speech recognition claim."""
     frames=len(pcm)//2;hop=SR//20
     energy=[sum(v*v for v in pcm[i*2:min(frames,i+hop)*2])/max(1,min(hop,frames-i)*2) for i in range(0,frames,hop)]
-    if not energy or max(energy)<1e-7:raise ValueError('Silent archive window')
-    threshold=max(1e-6,max(energy)*.025);onsets=[i*hop for i,e in enumerate(energy) if e>threshold and (i==0 or energy[i-1]<=threshold)]
-    result=[]
-    for i in range(8):
-        target=round(i*frames/8);start=min(onsets,key=lambda p:abs(p-target)) if onsets else target
-        # Keep suggestions spread out even when a film has continuous narration.
-        if abs(start-target)>SR*2:start=target
-        start=min(start,max(0,frames-SR//10))
-        end=next((j*hop for j in range(start//hop+4,len(energy)) if energy[j]<=threshold),min(frames,start+SR*2))
-        result.append((start,max(SR//10,min(SR*4,end-start,frames-start))))
+    if not energy or (reject_silence and max(energy)<1e-7):raise ValueError('Silent archive window')
+    # Consecutive regions cover the entire available phrase, once, in order.
+    # Prefer a quiet boundary near each ~750ms target; never skip material.
+    count=min(64,max(1,math.ceil(frames/(SR*.75))))
+    boundaries=[0]
+    for i in range(1,count):
+        target=round(i*frames/count)
+        lo=max(boundaries[-1]+1,target-SR//8);hi=min(frames-(count-i),target+SR//8)
+        candidates=[j*hop for j in range(max(1,(lo+hop-1)//hop),min(len(energy),(hi//hop)+1))]
+        boundary=min(candidates,key=lambda p:(energy[p//hop],abs(p-target))) if candidates else target
+        boundaries.append(boundary)
+    boundaries.append(frames)
+    result=[(start,end-start) for start,end in zip(boundaries,boundaries[1:])]
     return result
 
 class ArchiveWorker:
