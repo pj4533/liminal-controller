@@ -11,12 +11,14 @@ typedef struct {
  float envelope,fast,slow,held[2],phase[4];
  float hp_k,lp_k,eq_k,bass_k,echo_k,room_k,drive,eq_gain,feedback[4];
  float delay_old,delay_new,delay_fade;
- int ep,mp,rp,clock,hold,echo_dirty,room_dirty,mod_dirty;
+ uint64_t clock;
+ int ep,mp,rp,hold,echo_dirty,room_dirty,mod_dirty;
 } FxMemory;
 typedef struct {float target[NP],value[NP];FxMemory m;} Fx;
 static const int comb_size[4]={1103,1361,1559,1867};
 static const float division_beats[6]={.25f,.5f,.75f,1,1.5f,2};
 static float bound(float x,float lo,float hi){return fminf(hi,fmaxf(lo,x));}
+static float clean(float x){return fabsf(x)<1e-20f?0:x;}
 static float pole(float hz){return 1-expf(-TAU*hz/SR);}
 static float triangle(float phase){return 1-4*fabsf(phase-.5f);}
 static void fx_init(Fx *f,int ch){
@@ -31,6 +33,13 @@ static float tap(float data[][2],int size,int pos,float delay,int c){
 }
 static void fx_control(Fx *f,int ch,float beat){
  FxMemory *m=&f->m;float *v=f->value;
+ /* Prevent very quiet idle tails entering costly subnormal arithmetic. */
+ m->fast=clean(m->fast);m->slow=clean(m->slow);m->envelope=clean(m->envelope);
+ for(int c=0;c<2;c++){
+  m->hp[c]=clean(m->hp[c]);m->lp[c]=clean(m->lp[c]);m->eq[c]=clean(m->eq[c]);
+  m->bass[c]=clean(m->bass[c]);m->tone[c]=clean(m->tone[c]);m->echo_lp[c]=clean(m->echo_lp[c]);
+  for(int i=0;i<4;i++)m->damp[c][i]=clean(m->damp[c][i]);
+ }
  m->hp_k=pole(fmaxf(1,v[1]));m->lp_k=pole(v[2]);
  m->eq_k=pole(character_hz[ch]);
  m->bass_k=pole(160);m->echo_k=pole(v[11]);m->room_k=pole(v[14]);
@@ -62,9 +71,6 @@ static void fx_process(Fx *f,int ch,float beat,float input[2],float out[2],float
  if(character_kind[ch]==0){float transient=bound((m->fast-m->slow)*8,-1,1);for(int c=0;c<2;c++)x[c]*=1+v[4]*transient;}
  m->envelope+=(detector-m->envelope)*(detector>m->envelope?.004f:.00015f);
  if(v[5]>.0001f){float threshold=.16f-.12f*v[5],ratio=1+5*v[5];float g=m->envelope>threshold?powf(threshold/m->envelope,1-1/ratio):1;for(int c=0;c<2;c++)x[c]*=g;}
- float mid=(x[0]+x[1])*.5f,side=(x[0]-x[1])*.5f*v[6];
- if(ch==1){m->bass[0]+=(side-m->bass[0])*m->bass_k;side-=m->bass[0];}
- x[0]=mid+side;x[1]=mid-side;
  int mod_active=v[16]+v[19]+v[20]>1e-5f;
  if(mod_active){
   m->mod_dirty=1;
@@ -91,7 +97,7 @@ static void fx_process(Fx *f,int ch,float beat,float input[2],float out[2],float
    float ratio=c?1.125f:1;
    float wet=tap(m->echo,ECHO_FRAMES,m->ep,m->delay_old*ratio,c)*(1-m->delay_fade)+tap(m->echo,ECHO_FRAMES,m->ep,m->delay_new*ratio,c)*m->delay_fade;
    m->echo_lp[c]+=(wet-m->echo_lp[c])*m->echo_k;
-   m->echo[m->ep][c]=bound(x[c]+m->echo_lp[c]*v[10],-8,8);
+   m->echo[m->ep][c]=clean(bound(x[c]+m->echo_lp[c]*v[10],-8,8));
    out[c]+=m->echo_lp[c]*v[8];
   }
  }else if(m->echo_dirty){memset(m->echo,0,sizeof m->echo);memset(m->echo_lp,0,sizeof m->echo_lp);m->echo_dirty=0;}
@@ -102,11 +108,11 @@ static void fx_process(Fx *f,int ch,float beat,float input[2],float out[2],float
    for(int i=0;i<4;i++){
     int size=comb_size[i]+c*23,pos=m->clock%size;float y=m->comb[c][i][pos];
     m->damp[c][i]+=(y-m->damp[c][i])*m->room_k;
-    m->comb[c][i][pos]=bound(pred*.25f+m->damp[c][i]*m->feedback[i],-8,8);wet+=y;
+    m->comb[c][i][pos]=clean(bound(pred*.25f+m->damp[c][i]*m->feedback[i],-8,8));wet+=y;
    }
    for(int i=0;i<2;i++){
     int pos=m->clock%(i?337:211);float delayed=m->allpass[c][i][pos];
-    float y=delayed-.5f*wet;m->allpass[c][i][pos]=wet+.5f*y;wet=y;
+    float y=delayed-.5f*wet;m->allpass[c][i][pos]=clean(wet+.5f*y);wet=y;
    }
    out[c]+=wet*v[12];
   }
@@ -115,7 +121,11 @@ static void fx_process(Fx *f,int ch,float beat,float input[2],float out[2],float
  float rates[4]={v[17],.33f,6.1f,SR/fmaxf(64,beat*division_beats[(int)f->target[22]])};
  for(int i=0;i<4;i++){m->phase[i]+=rates[i]/SR;if(m->phase[i]>=1)m->phase[i]-=1;}
  m->mp=(m->mp+1)%MOD_FRAMES;m->ep=(m->ep+1)%ECHO_FRAMES;m->rp=(m->rp+1)%ROOM_FRAMES;
- /* Bounded positive counter, divisible by all comb lengths is unnecessary. */
- m->clock=(m->clock+1)&0x3fffffff;
+ /* A64-bit sample counter avoids periodic comb-index discontinuities. */
+ m->clock++;
+ /* Final width includes stereo wet paths; Bass keeps its low side mono. */
+ float mid=(out[0]+out[1])*.5f,side=(out[0]-out[1])*.5f*v[6];
+ if(ch==1){m->bass[0]+=(side-m->bass[0])*m->bass_k;side-=m->bass[0];}
+ out[0]=mid+side;out[1]=mid-side;
  for(int c=0;c<2;c++)out[c]*=fminf(1,1+(c?v[7]:-v[7]));
 }

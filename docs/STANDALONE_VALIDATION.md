@@ -267,12 +267,13 @@ This candidate is implemented and **not deployed**. Live runtime remains
 - `sh scripts/build-native.sh`: pass, strict warnings; host AArch64 memory engine.
 - `ZIG=/verified/zig-0.13.0/zig sh scripts/build-native.sh device`: pass, ELF64
   x86_64 with maximum GLIBC requirement2.34 (target2.35).
-- `python3 -m unittest discover -s tests -v`:147passed,0failed,6.703s.
- 22new tests cover every processor/control's actual PCM contribution, channel
+- `python3 -m unittest discover -s tests -v`:148passed,0failed,7.289s.
+ 23new tests cover every processor/control's actual PCM contribution, channel
   isolation, native/Python nonfinite/address/bounds admission, generated contract,
   maximum settings, finite decaying feedback tails, stale-tail bypass/re-enable,
   Stop/restart silence, smoothing, echo-time crossfade and transport continuity,
-  per-channel/page mappings, Sound-first entry, held releases, Mix and Settings.
+  per-channel/page mappings, Sound-first entry, held releases, Mix and Settings,
+  and Width0 mono routing including all stereo wet paths.
   Existing chop fixtures explicitly select Cuts; ownership checks stay intact.
 - `scripts/rehearse-standalone.py --assets PRIVATE --out PRIVATE`:257passed,
  0failed (previous234 plus23additional actual encoder assertions). It retains
@@ -281,8 +282,8 @@ This candidate is implemented and **not deployed**. Live runtime remains
 - All41source/script Python files parse with Python3.10 grammar.
 - `scripts/benchmark-fx.py --out PRIVATE`:64voices confirmed at warmup, six
   channels/all FX,2,000blocks each static and rapid full-parameter traffic.
-  Static p99.560ms/max1.138ms; rapid p99.593ms/max3.081ms. Zero blocks exceed
- 5.805ms (44.1kHz/256). Stop clear.562ms; stopped peak0, voices0, overflow0.
+  Static p99.552ms/max3.602ms; rapid p99.542ms/max.630ms. Zero blocks exceed
+ 5.805ms (44.1kHz/256). Stop clear.539ms; stopped peak0, voices0, overflow0.
   This is an ARM host memory benchmark, excluding ALSA/USB and device scheduling.
 
 Viewed40native960x160screenshots: every channel/page at min/max settings,
@@ -296,7 +297,7 @@ Private `scripts/rehearse-fx.py` captures12seconds per isolated real channel
 (old default/new default/expressive). Six6second WAV comparisons contain2seconds
 of each case at unchanged gains, without export normalization. All captures are
 finite and bounded. Default RMS changes against the previous native engine:
-Drums0.000dB (difference RMS1.30e-9), Bass+.350dB, Lead-.128dB, Mids+.085dB,
+Drums0.000dB (difference RMS1.30e-9), Bass+.309dB, Lead-.128dB, Mids+.085dB,
 Chops-.055dB, Film-.020dB. Bass now monos its low side; other differences arise
 from genuine independent Room and tempo Echo replacing the shared fixed tap.
 These measurements characterize a deterministic offline source, not arbitrary

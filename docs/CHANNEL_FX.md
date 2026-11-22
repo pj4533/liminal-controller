@@ -44,7 +44,7 @@ All Auto and Manual voices sum into their channel bus before these processors:
  3k/2.4k/1.8kHz (±6dB). These are frequency variants of the same shelf topology,
   not claimed to be different algorithms. Glue/Compress is a stereo-linked
   envelope compressor, amount0–100%, ratio1–6:1, threshold.16→.04, no auto makeup.
-- Width scales stereo side0–150%; Bass is bounded0–100% and removes side below
+- Final-bus Width scales stereo side0–150%, including wet paths; Bass is bounded0–100% and removes side below
   a gentle160Hz crossover, retaining the mono low band. Pan retains the original
   linear one-side attenuation. Level/master defaults stay65%/45% and keep their
   original smoothing and master soft limiter.
@@ -74,7 +74,9 @@ monos its low side. Dry source gains, programmes and normalization are preserved
 Fixed buffers allocate at engine creation (roughly7MiB for six FX paths).
 No allocation, decoding, files or network run in rendering. Continuous controls
 smooth with a20ms time constant; filter/gain/feedback coefficients update every
-32samples. Division selectors are discrete. Disabled wet processors stop writing
+32samples. Very quiet filter/feedback states are floored below1e-20 to prevent
+subnormal idle-tail arithmetic; a64bit sample counter avoids periodic comb-index
+discontinuities. Division selectors are discrete. Disabled wet processors stop writing
 and clear their history once their smoothed mix falls below1e-5; re-enabling cannot
 resurrect a stale tail. Muting attenuates the channel after effects and keeps its
 musical state evolving. Stop clears every delay/filter/envelope/LFO/hold state

@@ -53,6 +53,11 @@ class FxTests(unittest.TestCase):
         self.assertLess(self.difference(dry[4000:12000],echo[4000:12000]),1e-12)
         self.assertGreater(max(map(abs,room[4000:12000])),1e-6)
         self.assertGreater(self.difference(echo,room),1e-5)
+    def test_zero_width_monos_all_stereo_wet_paths(self):
+        out=self.capture([(6,0),(8,.4),(12,.35),(16,.35)],seconds=2)
+        # Width is smoothed; allow its20ms settling from the default unity.
+        side=max(abs(out[i]-out[i+1]) for i in range(SR,len(out),2))
+        self.assertLess(side,1e-7)
     def test_inactive_processors_have_no_delayed_tail(self):
         out=self.capture(impulse=True)
         self.assertLess(max(map(abs,out[4000:])),1e-12)
