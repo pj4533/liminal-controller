@@ -6,11 +6,18 @@ slowly crossfading collection images behind readable controls. No Mac instance,
 controller connection, AI music/image service or network listener is needed.
 Boot starts stopped; Play toggles the local arrangement.
 
-**Status:** deployed runtime c92fb2f has a reproduced one-pad Chops defect.
-This candidate separates local text protection from chopping and Auto order,
-publishes safely while stopped, and adds a first Effects page with Echo/Reverb.
-See [mandatory real-source release gate](docs/CHOP_REGRESSION_GATE.md).
-Device qualification and physical listening for this candidate are pending.
+**Status:** live runtime **77b149e4d1dbbafaf10d81458e923d5ce5c54763** fixes
+the reproduced one-pad Chops defect and publishes prepared cuts safely while
+stopped. The exact failing GuideDog source passed actual device qualification,
+including eight cuts at revision10, real Auto/manual overlap and held release.
+Every used pad's captured native audio matches its intended range and ends
+naturally. All198device tests and the seven-case real-source gate passed.
+See [release gate](docs/CHOP_REGRESSION_GATE.md) and
+[device acceptance](docs/STANDALONE_VALIDATION.md). Physical listening and feel
+remain human checks.
+
+On a channel's initial Device/Note **Effects** page, encoder4 is **Echo** and
+encoder7 is **Reverb**; encoder5 sets Echo Time,6 Feedback and8 Decay.
 
 Press Play to start or stop. Select a channel with the six top buttons; play pads in either mode; hold Shift and
 press its lower button to disable automatic triggers for that channel. Mix exposes six channel

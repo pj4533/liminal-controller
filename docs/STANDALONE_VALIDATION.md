@@ -1,8 +1,9 @@
 # Standalone validation
 
-Latest accepted live runtime: **c92fb2f60fdf29d73ca1a554b2a619a575e6071e**,
-text-aware chops and playable Auto,2026-11-22. Its device acceptance appears at
-the end; earlier sections retain historical evidence for preceding rollouts.
+Latest accepted live runtime: **77b149e4d1dbbafaf10d81458e923d5ce5c54763**,
+real multi-cut Chops and prominent Echo/Reverb,2026-11-22. Acceptance is at the
+end. Earlier c92fb2f plumbing checks missed the subsequently reproduced one-pad
+defect and do not establish usable chopping; see CHOP_REGRESSION_GATE.md.
 
 Playability correction (2026-11-21), implemented and deployed:
 strict native host and Zig0.13 x86_64 builds pass; host113tests pass, including
@@ -494,8 +495,8 @@ feedback writes, with xruns0→0 and stopped voices/peak/overflow zero.
 
 Fresh uncached local base.en inference analyzed30seconds on one thread in
 11.606135seconds while ALSA/USB ran. It reached TEXT READY and prepared a real,
-unique, bounded semantic next bank. Conservative name protection legitimately
-produced one whole-line cut in this fixture; the qualifier used two synthetic
+unique, bounded semantic next bank. The earlier gate accepted one whole-line cut in this fixture; subsequent
+user testing proved the protection policy overbroad and this gate insufficient; the qualifier used two synthetic
 ranges separately for overlap ownership tests. It did not claim eight semantic
 cuts for every source or actual publication of this prepared bank while stopped.
 Sampled inference CPU was11.18seconds over11.177seconds observed (about one core),
@@ -525,3 +526,99 @@ listener or Drift runtime update occurred. This establishes silent hardware IO
 and synthetic-control acceptance; physical pad presses, visible colours, hearing,
 subjective timing/feel and acoustic balance remain human checks. Later docs-only
 commits do not change the deployed runtime identifier or require redeployment.
+
+
+## Real Chops and prominent Effects: device acceptance, 2026-11-22
+
+Installed source **77b149e4d1dbbafaf10d81458e923d5ce5c54763**, ABI2, all295
+runtime files verified during the transaction and independently rehashed after
+final health. Manifest SHA256:
+`97fd2ede39ba7b8bf01161148a9fc1adb5df39780abead349952e19354a67c41`.
+Native x86_64 engine SHA256:
+`a6043199e992b3449076a6ec1c4ca6e4ba2e81262da92fd10b33007af04a3f61`.
+Packaged speech tools/models/licenses stayed hash-identical. Source and native
+command17 stopped-publication support were installed as one coherent pair.
+
+The defect combined whole-sentence protection from capitalization/POS noise,
+Auto treating forbidden reordering as forbidden chopping, and queued analysis
+never becoming CURRENT while stopped. The original gate accepted one cut and
+substituted synthetic halves, bypassing the requested behavior. The replacement
+requires exact failing GuideDog audio/revisions and independent Chevrolet audio,
+CURRENT publication, real multiple short cuts and production MIDI dispatch.
+A second review strengthened the gate from nonzero audio/expected-source hashes
+to actual captured audio versus an intended-range native reference, natural end,
+and final native command checks. Whole-phrase, offset and duration mutations are
+rejected; checks cannot promise absence of unrelated future defects.
+
+Actual device unit suite:198passed,0failed in14.348s, including packaged POS,
+parser, first Effects page/audio, current-bank ownership/publication and audio
+oracle regressions. The actual x86 real-source gate passed all7cases with
+GuideDog revisions0/4/8/10 producing4/8/8/8cuts and Chevrolet0/4/8 producing3/3/6.
+All40used-pad native captures matched intended-range reference audio exactly,
+were finite/audible/distinct, and naturally ended before release. All408unused
+pad dispatches were dark/inert. Exact Auto/Manual PCM and real short automatic
+pad identities passed. These are native memory captures, not physical listening.
+Host private-library rehearsal separately passed264checks; two integrated
+startup paths and five deliberate fault outcomes passed their release checks.
+
+Actual x86 benchmark,64voices and4000blocks/phase,5.804989ms deadline:
+
+| Phase | p99 | p99 headroom | Deadline misses |
+| --- | ---: | ---: | ---: |
+| All effects | .761077ms | 86.89% | 0 |
+| Rapid parameters | .766151ms | 86.80% | 0 |
+| Effects returned to zero | .551300ms | 90.50% | 0 |
+
+Stop clear took.680707ms with zero stopped voices/peak/overflow.
+
+The separate exclusive master-zero ALSA/USB qualifier ran fresh30second base.en
+inference in11.825443s on one thread, cache_hit=false. Its8cut result became
+CURRENT while stopped. Exact GuideDog then became CURRENT at revision3 with
+four real cuts: whole line, graduation, day, San Rafael, physical notes36–39.
+Every used pad's actual ALSA dispatch source/range was checked. Concurrent fresh
+memory-engine captures of that published bank matched reference audio and ended
+naturally while ALSA/display continued; these are distinct measurements. Actual
+Auto feedback covered pads1–4, unused pads stayed dark/inert, and xruns0→0,
+stopped voices/peak/overflow zero,369display transfers/99MIDI writes.
+Sampled inference used11.42CPU seconds over11.413observed seconds (about one
+core),389,976KiB RSS high-water mark. The qualifier peaked at358,316KiB.
+These250ms samples exclude process startup/exit gaps.
+
+Additional silent actual ALSA/USB acceptance used the exact failing GuideDog
+revision10 with8genuine cuts mapped36–39/44–47. A held real Mids voice deferred
+production stopped publication from revision3 to10; releasing it across channel
+selection published the bank. Real Auto plus Manual followed voices1→2→1,
+with native red feedback, Manual-mode clearing and onset-owned release.
+All six channels then sounded real sources through combined Echo/Reverb edited
+via production MIDI on their initial Effects page. Stop cleared voices/tails;
+257display transfers/464MIDI writes, xruns0→0, final peak/voices/overflow zero.
+Controls are Level, Low Cut, High Cut, Echo, Echo Time, Feedback, Reverb, Decay;
+Echo is encoder4 and Reverb encoder7. Existing sound/space/motion pages remain.
+
+An initial supplemental35ms observation crossed synchronous next-bank installation
+and sampled after418ms, beyond the120ms feedback lifetime. That failed receipt
+was retained, normal service was safely restored, and the precise overlap test
+was rerun after ordinary preparation settled. No application/source/assertion
+was weakened. This does not establish a worst-case physical LED or input latency
+bound during bank preparation. The main gate independently observed short Auto
+feedback during its longer actual playback run.
+
+After the supplemental test, normal service passed another60.3694s with stable
+PID20614 as sole USB/MIDI/PCM owner, ready and stopped with useful CURRENT text.
+Frames131,329→2,793,217, written131,258→2,793,214 and display27→621; xruns0→0,
+peak/voices/overflow zero and no runtime error. Background sources continue to
+refresh. The independent final snapshot had5active TEXT cuts, revision9:
+whole line “to record the thrills and spills as they come.”, record,
+the thrills, spills, they come.; mapped notes36–39/44. This live-source snapshot
+is separate from the pinned8cut GuideDog release fixture and is not a promise
+that every source always yields8cuts. Current readiness exposes exact active
+source hash, labels, ranges and quality instead of only NEXT READY.
+
+All104recordings totaling16,887,273,274bytes preserved exact path/size/mtime/inode;
+all7session hashes, init, recovery and boot-selection checks passed. Private
+checkpoints retain the previous c92fb2f source/native/manifest and mutable state,
+original and supplemental receipts, resource samples and independent final
+verification. No OS/firmware/init/boot change, reboot, listener, Drift update or
+unsolicited sound was issued. Physical hearing, visible pad colours, button
+presses and feel remain human acceptance; later docs-only commits do not change
+the installed runtime identifier.
