@@ -1,5 +1,9 @@
 # Standalone validation
 
+Latest accepted live runtime: **87c8637add926fb52551e0b5f0d0b752e5e101c7**,
+selected-channel FX,2026-11-22. Its device acceptance appears at the end; earlier
+sections retain the historical evidence for each preceding rollout.
+
 Playability correction (2026-11-21), implemented and deployed:
 strict native host and Zig0.13 x86_64 builds pass; host113tests pass, including
 12 focused regressions for Play toggle/queue order/hush, Stillwater default
@@ -261,8 +265,9 @@ logs and operational continuation remain private, outside source control.
 
 ## Selected channel FX candidate — host review, 2026-11-22
 
-This candidate is implemented and **not deployed**. Live runtime remains
-9ea6e615. See CHANNEL_FX.md for all24controls, algorithms, defaults and ranges.
+At this host-review stage the candidate was implemented but not deployed;
+the live runtime was9ea6e615. The later device acceptance below supersedes this
+status. See CHANNEL_FX.md for all24controls, algorithms, defaults and ranges.
 
 - `sh scripts/build-native.sh`: pass, strict warnings; host AArch64 memory engine.
 - `ZIG=/verified/zig-0.13.0/zig sh scripts/build-native.sh device`: pass, ELF64
@@ -311,7 +316,7 @@ The existing private delta helper assumes an unchanged binary/file set and needs
 adaptation, followed by the full device acceptance in STANDALONE_INSTALL.md.
 
 
-Review corrections (candidate, not deployed): control smoothing now snaps to its
+Review corrections (before deployment): control smoothing now snaps to its
 exact target below1e-6 parameter units or when float rounding stalls. A read-only
 native-storage regression verifies all continuous controls settle exactly after
 four seconds, all zero targets are zero, and Stop leaves no subnormal controls.
@@ -326,3 +331,52 @@ per phase): static p99.452ms, rapid-controls p99.513ms, returned-to-zero p99.368
 max3.247ms, zero deadline overruns; deadline5.805ms. Stop clear.461ms, stopped
 peak0, voices0, overflow0. Evidence: private fx-reviewfix-tests.log and
 fx-reviewfix-benchmark-host.json. These are host results, not x86/ALSA claims.
+
+
+## Selected channel FX — accepted on device, 2026-11-22
+
+Live source **87c8637add926fb52551e0b5f0d0b752e5e101c7** was installed as a
+coherent Python/native pair after independent implementation and workflow review.
+All280installed manifest hashes verified. Manifest SHA256:
+`5d1a3195234500ab7bc3ec8348b9b26ac376e0464f92075e80399bcdb6b52a3b`.
+The paired x86 engine SHA256 is
+`8ca0d9e402ab613507c7d4ddfb88ab224c5fb70c12d47b5eb004cd5ece74aa63`.
+Actual Push suite:149passed,0failed in11.889s, including the exact-endpoint
+smoothing regression and all prior pad/source/ownership checks.
+
+Actual x86 memory-render qualification ran4000blocks per phase,64voices across
+all six channels. Against the256frame/44.1kHz deadline5.804989ms:
+
+| Phase | p99 render time | p99 headroom | Blocks over deadline |
+|---|---:|---:|---:|
+| All effects | .715548ms | 87.67% | 0 |
+| Rapid controls | .737053ms | 87.30% | 0 |
+| Effects returned to zero | .528746ms | 90.89% | 0 |
+
+Stop clear took.638249ms; stopped peak0, voices0, overflow0. The separate
+exclusive master-zero qualifier exercised actual ALSA/USB with synthetic MIDI,
+held releases across pages, all effects/six channels/64voices, rapid controls,
+returned-zero controls and Stop tails. It passed with0xruns/overflow,
+353display frames, stopped frames1,762,817/written1,758,561, peak0 and voices0.
+These are actual hardware IO and deterministic/synthetic checks; no physical
+listening or button/pad manipulation was tested, and subjective sound quality
+or acoustic balance is not established by these results.
+
+Normal service then passed60.2916s fresh, ready and stopped with the same app
+PID5222 as sole USB/PCM/MIDI owner. Errors, image-worker errors and archive
+errors stayed empty; xruns0→0, overflow0, voices0, peak0. Audio frames advanced
+20,737→2,676,737, written20,480→2,676,736 and display3→600. NEXT READY=true;
+archive state CACHED READY. The exact inventory of104recordings totaling
+16,887,273,274bytes (path/size/mtime/inode), seven session hashes and primary init
+matched. Recovery and boot-selection preservation assertions passed. No reboot,
+OS/init/boot change or Drift runtime update was part of this application rollout.
+
+The fresh checkpoint, coherent package, original-runtime backup, benchmark,
+qualifier, normal-health and preservation receipts remain private. Automatic
+rollback retains the established graceful-stop/zero-owner requirement, paired
+native/source/manifest and mutable ledger/cache restoration, removal only of
+introduced files, old-hash verification and60seconds stopped health. It never
+restores recordings/sessions/init/recovery/OS as application state. Prior held
+Manual Chops, one-shot Film, chronological phrase mapping and take/archive
+refresh agreements remain in force. Subsequent documentation commits do not
+change the installed runtime identifier or require another deployment.

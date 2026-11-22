@@ -116,17 +116,18 @@ Both controlled post-fix boots passed for runtime1dfaa516; see
 STANDALONE_VALIDATION.md. Later documentation commits are not deployed versions.
 
 
-## Channel FX candidate: source/native pairing
+## Channel FX: source/native pairing
 
 This change requires a NEW native engine plus the staged Python source as one
 coherent manifest-reviewed pair. The earlier private `deploy-chop-gate.py`
-refuses native-byte changes and assumes the old fixed file set; it must be
-adapted/reviewed before this candidate can be deployed. Include `channel_fx.py`
+refuses native-byte changes and assumes the old fixed file set. Its reviewed
+replacement installed runtime87c8637 successfully on2026-11-22; see the device
+evidence in STANDALONE_VALIDATION.md. Include `channel_fx.py`
 in the runtime whitelist; `fx_specs.h`/`fx_dsp.h` are build inputs. Never combine
 new Python with the previous native engine, which does not support command16.
 
-A later authorized rollout must retain the documented pinned SSH wrapper, save
-a fresh stopped checkpoint, gracefully stop/prove all owners dead, verify all
+Every subsequent authorized rollout must retain the documented pinned SSH wrapper,
+save a fresh stopped checkpoint, gracefully stop/prove all owners dead, verify all
 source/native/staged manifest hashes, run the complete device suite and a silent
 master-zero actual ALSA/USB qualifier. Exercise all pages/effects, held releases,
 boundary refresh, rapid changes and Stop; then require at least60seconds of
@@ -136,4 +137,5 @@ Rollback restores the checkpointed source/native/manifest and necessary private
 mutable state as a pair, verifies hashes and repeats stopped health. Never
 restore recordings/sessions/init/recovery/OS as part of application rollback.
 This implementation does not authorize changing boot, rebooting or updating
-the Drift gateway. Device timing/listening remain gates after host review.
+the Drift gateway. Actual x86 timing and silent ALSA/USB checks passed for87c8637;
+physical controls, listening and subjective quality remain human acceptance checks.
