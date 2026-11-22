@@ -1,4 +1,4 @@
-"""ctypes ABI1; immutable PCM owners outlive native bank/voice references."""
+"""ctypes ABI2; immutable PCM owners outlive native bank/voice references."""
 import ctypes as C
 from pathlib import Path
 import array
@@ -7,7 +7,7 @@ import wave
 from channel_fx import parameters
 SR=44100
 class Event(C.Structure):
-    _fields_=[('frame',C.c_int),('channel',C.c_int),('sample',C.c_int),('gate',C.c_int),('speed',C.c_float),('gain',C.c_float),('attack',C.c_float),('release',C.c_float),('frequency',C.c_float)]
+    _fields_=[('frame',C.c_int),('channel',C.c_int),('sample',C.c_int),('gate',C.c_int),('speed',C.c_float),('gain',C.c_float),('attack',C.c_float),('release',C.c_float),('frequency',C.c_float),('pad',C.c_int)]
 class Bank(C.Structure):
     _fields_=[('length',C.c_int),('count',C.c_int),('revision',C.c_int),('events',Event*512)]
 class Command(C.Structure):
@@ -24,10 +24,12 @@ def read_pcm(path):
 class Sampler:
     def __init__(self,path):
         self.lib=C.CDLL(str(path));L=self.lib
+        if not hasattr(L,"lm_abi") or L.lm_abi()!=2:raise RuntimeError("Paired ABI2 native engine required")
         L.lm_create.restype=C.c_void_p
         for name,args in [('lm_sample',[C.c_void_p,C.c_int,C.POINTER(C.c_float),C.c_int]),('lm_bank_sample',[C.c_void_p,C.c_int,C.c_int,C.POINTER(C.c_float),C.c_int]),('lm_reserve',[C.c_void_p]),('lm_bank',[C.c_void_p,C.c_int,C.POINTER(Bank)]),('lm_command',[C.c_void_p,C.POINTER(Command)]),('lm_render',[C.c_void_p,C.POINTER(C.c_float),C.c_int]),('lm_status',[C.c_void_p,C.c_int]),('lm_state',[C.c_void_p,C.c_int]),('lm_start',[C.c_void_p,C.c_char_p]),('lm_stop',[C.c_void_p]),('lm_destroy',[C.c_void_p])]:getattr(L,name).argtypes=args
         for name in ('frames','written','xruns'):
             f=getattr(L,'lm_'+name);f.argtypes=[C.c_void_p];f.restype=C.c_ulong
+        L.lm_feedback.argtypes=[C.c_void_p,C.c_int];L.lm_feedback.restype=C.c_ulonglong
         L.lm_peak.argtypes=[C.c_void_p];L.lm_peak.restype=C.c_float
         L.lm_blend.argtypes=[C.POINTER(C.c_uint16),C.POINTER(C.c_uint16),C.POINTER(C.c_uint16),C.c_int,C.c_int]
         self.ptr=L.lm_create()
@@ -68,6 +70,9 @@ class Sampler:
         return bytes(out)
     def status(self):
         return dict(bank=self.lib.lm_status(self.ptr,0),position=self.lib.lm_status(self.ptr,1),playing=bool(self.lib.lm_status(self.ptr,2)),overflow=self.lib.lm_status(self.ptr,3),voices=self.lib.lm_status(self.ptr,4),alive=bool(self.lib.lm_status(self.ptr,5)),frames=self.lib.lm_frames(self.ptr),written=self.lib.lm_written(self.ptr),xruns=self.lib.lm_xruns(self.ptr),peak=self.lib.lm_peak(self.ptr))
+    def feedback(self,ch):
+        value=self.lib.lm_feedback(self.ptr,ch)
+        return (value>>32,value&0xffffffff) if value else None
     def start(self):
         result=self.lib.lm_start(self.ptr,b'hw:A3,0')
         if result:raise RuntimeError('ALSA start: %d'%result)

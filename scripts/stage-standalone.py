@@ -12,7 +12,7 @@ import tarfile
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE=('src/image_worker.py','src/standalone_app.py','src/standalone.py','src/standalone_render.py','src/sampler.py','src/composition.py','src/dialogue_ledger.py','src/hardware.py','src/midi.py','src/canvas.py','scripts/standalone-supervisor.py','scripts/standalone-boot.py','scripts/install-standalone.py','scripts/deploy-staged.py','LICENSE','LICENSE.push-hack','NOTICE','docs/lofi-samples.md')
 SOURCE+=('scripts/boot-success.py','scripts/qualify-device.py')
-SOURCE+=('src/channel_fx.py','src/display_worker.py','src/archive_worker.py','scripts/qualify-archive.py')
+SOURCE+=('src/dialogue.py','src/channel_fx.py','src/display_worker.py','src/archive_worker.py','scripts/qualify-archive.py')
 def digest(path):
     h=hashlib.sha256()
     with path.open('rb') as stream:
@@ -32,7 +32,7 @@ def main():
     # Deliberately private; catalog itself records protected source archive locations.
     shutil.copytree(a.assets,a.out/'private-assets',ignore=shutil.ignore_patterns('*.tmp','dialogue-lines.json'))
     files={str(p.relative_to(a.out)):digest(p) for p in sorted(a.out.rglob('*')) if p.is_file()}
-    manifest=dict(abi=1,architecture='x86_64-linux-gnu.2.35',source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),upstream_liminal='67fde8da0c18bb8ace86d0a03a866f5670f141d6',files=files,private_commercial_assets=True)
+    manifest=dict(abi=2,architecture='x86_64-linux-gnu.2.35',source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),upstream_liminal='10f5e1d2758b5f05007221673cc476ce6c9048e2',files=files,private_commercial_assets=True)
     (a.out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     archive=a.out.with_suffix('.tar.gz')
     with tarfile.open(archive,'w:gz',compresslevel=1) as tar:

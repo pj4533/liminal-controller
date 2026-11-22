@@ -380,3 +380,40 @@ restores recordings/sessions/init/recovery/OS as application state. Prior held
 Manual Chops, one-shot Film, chronological phrase mapping and take/archive
 refresh agreements remain in force. Subsequent documentation commits do not
 change the installed runtime identifier or require another deployment.
+
+
+## Rhythmic chops / playable Auto — host candidate, 2026-11-22
+
+Candidate source extraction: Liminal main10f5e1d2758b5f05007221673cc476ce6c9048e2.
+See DIALOGUE_PORT.md for exact portable scope and deliberately omitted semantic
+and Swift-only processing. This is host evidence; installed runtime remains
+87c8637 until a separately executed paired rollout and device acceptance.
+
+Host strict native build and verified Zig0.13x86 build passed. The official
+Zig aarch64-linux0.13archive SHA256 was checked against ziglang.org's release
+index:041ac42323837eb5624068acd8b00cd5777dac4cf91179e8dad7a7e90dd0c556.
+Device engine is ELF64x86_64 with maximum GLIBC2.34 (target2.35).
+`python3 -m unittest discover -s tests -v`:163passed,0failed,6.988s.
+Fourteen added tests cover all-channel Auto/manual coexistence, mode-only onset
+gating, source-owned releases across mode/edit/selection/bank, actual successful
+native automatic feedback, rejected/muted/manual/stale/channel isolation, short
+source/gate/120ms expiry, melodic octave mapping, acoustic vocabulary spread,
+onset trimming, measured/stretched take timing, deterministic arc/feel/gates,
+chronological reorder guard and tiny/empty sources. The former native test that
+accidentally exercised unpublished-bank admission now explicitly tests manual
+onsets accepted in Auto. Continuous Drum/Film playback carries no proxy pad ID.
+
+Private-asset rehearsal:257passed,0failed, including real six-channel PCM,
+100drum hashes/durations,143instrument assets, coherent64beat programme/source
+publication, held releases and Stop. All42source/script files parse asPython3.10.
+Native960x160Chops Auto Sound/Cuts and Help were viewed; all eight FX columns,
+held-cut controls and the new Drums Shift+pad help fit their bounds.
+
+Host memory benchmark,64voices/2000blocks per phase: all-FX p99.477166ms,
+rapid controls.538875ms, returned-zero.348625ms; zero5.804989ms deadline
+misses. Stop clear.427458ms, stopped peak0/voices0/overflow0. These are ARM
+memory-render results, excluding actual ALSA/USB/device scheduling. Device unit
+suite, silent qualifier, ownership, preservation and60second stopped-health
+checks remain mandatory. No listening, physical pad/display or device latency
+acceptance is claimed here. Source/native/manifest must upgrade together toABI2;
+the prior accepted ABI1 source/native pair remains the rollback target.

@@ -17,9 +17,9 @@
 #define NQ 1024
 #define NC 6
 #include "fx_dsp.h"
-/* Standalone sampler ABI1. All file IO and allocation happen before publication. */
+/* Standalone sampler ABI2. All file IO and allocation happen before publication. */
 typedef struct { const float *pcm; int frames; } Sample;
-typedef struct { int frame,channel,sample,gate; float speed,gain,attack,release,frequency; } Event;
+typedef struct { int frame,channel,sample,gate; float speed,gain,attack,release,frequency; int pad; } Event;
 typedef struct { int length,count,revision; Event events[NE]; } Bank;
 typedef struct { int op,a,b,id; Event event; } Command;
 typedef struct { int live,bank,id,age,releasing,left; Event e; double pos; float env,body[2]; } Voice;
@@ -29,6 +29,8 @@ typedef struct {
  int hush,current,next,position,event,playing,manual[NC],muted[NC];
  float level[NC],smooth[NC],tone[NC],master,master_smooth;
  Fx fx[NC];
+ int flash_pad[NC],flash_revision[NC],flash_left[NC];
+ _Atomic unsigned long long feedback[NC];
  _Atomic int shown_bank,shown_position,shown_playing,overflow,shown_voices;
  _Atomic unsigned long frames,written,xruns; _Atomic float peak;
  _Atomic int running; int started; pthread_t thread; void *alsa,*pcm;
@@ -37,6 +39,7 @@ typedef struct {
  long (*pcm_write)(void *,const void *,unsigned long);
  int (*pcm_prepare)(void *); int (*pcm_nonblock)(void *,int);int (*pcm_close)(void *);
 } Engine;
+int lm_abi(void){return 2;}
 void *lm_create(void){
  Engine *s=calloc(1,sizeof *s);if(!s)return NULL;
  s->current=s->next=-1;s->master=.45f;
@@ -59,7 +62,7 @@ int lm_bank(Engine *s,int slot,const Bank *b){
  int previous=-1;
  for(int i=0;i<b->count;i++){
   Event e=b->events[i];
-  if(e.frame<previous||e.frame>=b->length||e.channel<0||e.channel>=NC||e.sample<0||e.sample>=NS||!s->samples[e.sample].pcm||e.gate<1||!isfinite(e.speed)||e.speed<=0||e.speed>16||!isfinite(e.gain)||e.gain<0||e.gain>(e.channel==4?16:4)||!isfinite(e.attack)||e.attack<1||!isfinite(e.release)||e.release<1)return 0;
+  if(e.pad<0||e.pad>255||(e.pad>64&&e.pad<128)||e.frame<previous||e.frame>=b->length||e.channel<0||e.channel>=NC||e.sample<0||e.sample>=NS||!s->samples[e.sample].pcm||e.gate<1||!isfinite(e.speed)||e.speed<=0||e.speed>16||!isfinite(e.gain)||e.gain<0||e.gain>(e.channel==4?16:4)||!isfinite(e.attack)||e.attack<1||!isfinite(e.release)||e.release<1)return 0;
   previous=e.frame;
  }
  s->banks[slot]=*b;return 1;
@@ -70,7 +73,7 @@ int lm_command(Engine *s,const Command *c){
  unsigned w=atomic_load(&s->write),r=atomic_load_explicit(&s->read,memory_order_acquire);
  if(w-r>=NQ){atomic_fetch_add(&s->overflow,1);return 0;}
  if(c->op==7){
-  if(c->a<0||c->a>=NB||c->event.frame<0||c->event.sample<0||c->event.sample>=NS)return -1;
+  if(c->id<=0||c->a<0||c->a>=NB||c->event.frame<0||c->event.sample<0||c->event.sample>=NS)return -1;
   int expected=atomic_load(&s->state[c->a]);
   do {if((expected&3)!=2)return -1;}while(!atomic_compare_exchange_weak(&s->state[c->a],&expected,expected+4));
   if(atomic_load(&s->shown_bank)!=c->a||s->banks[c->a].revision!=c->b){atomic_fetch_sub(&s->state[c->a],4);return -1;}
@@ -80,7 +83,9 @@ int lm_command(Engine *s,const Command *c){
 static void release(Voice *v){if(v->live&&!v->releasing){v->releasing=1;v->left=(int)v->e.release;}}
 static void note(Engine *s,Event e,int bank,int id){
  if(e.channel<0||e.channel>=NC||e.sample<0||e.sample>=NS||!s->samples[e.sample].pcm)return;
- for(int i=0;i<NV;i++)if(!s->voices[i].live){s->voices[i]=(Voice){.live=1,.bank=bank,.id=id,.e=e,.pos=id?fmax(0,e.frame):0};return;}
+ for(int i=0;i<NV;i++)if(!s->voices[i].live){s->voices[i]=(Voice){.live=1,.bank=bank,.id=id,.e=e,.pos=id?fmax(0,e.frame):0};
+  if(!id&&e.pad>0&&!s->muted[e.channel]){int ch=e.channel;s->flash_pad[ch]=e.pad;s->flash_revision[ch]=s->banks[bank].revision;int duration=(int)fmin(5292,fmin(e.gate,(s->samples[e.sample].frames-1)/e.speed));s->flash_left[ch]=duration;}
+  return;}
  atomic_fetch_add(&s->overflow,1); /* Reject newest onset; never steal a held identity. */
 }
 static void commands(Engine *s){
@@ -91,14 +96,14 @@ static void commands(Engine *s){
   if(c.op==15)c.op=s->playing?2:1;
   switch(c.op){
    case 1:s->hush=0;if(s->current>=0)s->playing=1;break;
-   case 2:s->hush=1323;s->playing=0;s->position=s->event=0;for(int i=0;i<NV;i++){release(&s->voices[i]);if(s->voices[i].left>1323)s->voices[i].left=1323;}for(int ch=0;ch<NC;ch++)fx_clear(&s->fx[ch]);break;
-   case 3:if(ch>=0&&ch<NC){s->manual[ch]=c.b;for(int i=0;i<NV;i++)if(s->voices[i].e.channel==ch&&s->voices[i].id==0)release(&s->voices[i]);}break;
+   case 2:s->hush=1323;s->playing=0;s->position=s->event=0;for(int ch=0;ch<NC;ch++)s->flash_left[ch]=0;for(int i=0;i<NV;i++){release(&s->voices[i]);if(s->voices[i].left>1323)s->voices[i].left=1323;}for(int ch=0;ch<NC;ch++)fx_clear(&s->fx[ch]);break;
+   case 3:if(ch>=0&&ch<NC){s->manual[ch]=c.b;if(c.b)s->flash_left[ch]=0;}break;
    case 4:if(ch>=0&&ch<NC)s->level[ch]=s->fx[ch].target[0]=fminf(1,fmaxf(0,c.event.gain));break;
-   case 5:if(ch>=0&&ch<NC)s->muted[ch]=c.b;break;
+   case 5:if(ch>=0&&ch<NC){s->muted[ch]=c.b;if(c.b)s->flash_left[ch]=0;}break;
    case 6:if(ch>=0&&ch<NB&&atomic_load(&s->state[ch])==1){atomic_store(&s->state[ch],2);if(s->current<0){s->current=ch;s->event=s->position=0;}else s->next=ch;}break;
    /* Admission validated current/revision and pinned the onset's source. A
       boundary after admission must not discard that already accepted note. */
-   case 7:if(c.event.channel>=0&&c.event.channel<NC&&s->manual[c.event.channel]){s->hush=0;note(s,c.event,c.a,c.id);}atomic_fetch_sub(&s->state[c.a],4);break;
+   case 7:if(c.event.channel>=0&&c.event.channel<NC){s->hush=0;note(s,c.event,c.a,c.id);}atomic_fetch_sub(&s->state[c.a],4);break;
    case 8:for(int i=0;i<NV;i++)if(s->voices[i].id==c.id)release(&s->voices[i]);break;
    case 9:for(int i=0;i<NV;i++)if(s->voices[i].id)release(&s->voices[i]);break;
    case 10:s->master=fminf(1,fmaxf(0,c.event.gain));break;
@@ -114,6 +119,7 @@ static void commands(Engine *s){
 void lm_render(Engine *s,float *out,int count){
  commands(s);float peak=0;
  for(int n=0;n<count;n++){
+  for(int ch=0;ch<NC;ch++)if(s->flash_left[ch]>0)s->flash_left[ch]--;
   if(s->playing&&s->current>=0){
    Bank *b=&s->banks[s->current];
    if(s->position>=b->length){s->position=s->event=0;if(s->next>=0){s->current=s->next;s->next=-1;b=&s->banks[s->current];}}
@@ -158,10 +164,12 @@ void lm_render(Engine *s,float *out,int count){
  }
  /* Retire banks only after all onset-owned voices have finished. */
  for(int b=0;b<NB;b++)if(atomic_load(&s->state[b])==2&&b!=s->current&&b!=s->next){int used=0;for(int i=0;i<NV;i++)if(s->voices[i].live&&s->voices[i].bank==b)used=1;if(!used){int expected=2;atomic_compare_exchange_strong(&s->state[b],&expected,0);}}
+ for(int ch=0;ch<NC;ch++)atomic_store(&s->feedback[ch],s->flash_left[ch]>0?((unsigned long long)(unsigned)s->flash_revision[ch]<<32)|(unsigned)s->flash_pad[ch]:0);
  int voices=0;for(int i=0;i<NV;i++)voices+=s->voices[i].live;
  atomic_store(&s->shown_voices,voices);atomic_store(&s->shown_bank,s->current);atomic_store(&s->shown_position,s->position);atomic_store(&s->shown_playing,s->playing);atomic_store(&s->peak,peak);atomic_fetch_add(&s->frames,(unsigned long)count);
 }
 int lm_status(Engine *s,int field){switch(field){case 0:return atomic_load(&s->shown_bank);case 1:return atomic_load(&s->shown_position);case 2:return atomic_load(&s->shown_playing);case 3:return atomic_load(&s->overflow);case 4:return atomic_load(&s->shown_voices);case 5:return atomic_load(&s->running);default:return -1;}}
+unsigned long long lm_feedback(Engine *s,int ch){return ch>=0&&ch<NC?atomic_load(&s->feedback[ch]):0;}
 int lm_state(Engine *s,int slot){return slot>=0&&slot<NB?(atomic_load(&s->state[slot])&3):-1;}
 unsigned long lm_frames(Engine *s){return atomic_load(&s->frames);}
 unsigned long lm_written(Engine *s){return atomic_load(&s->written);}

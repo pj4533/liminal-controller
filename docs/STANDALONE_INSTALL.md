@@ -139,3 +139,12 @@ restore recordings/sessions/init/recovery/OS as part of application rollback.
 This implementation does not authorize changing boot, rebooting or updating
 the Drift gateway. Actual x86 timing and silent ALSA/USB checks passed for87c8637;
 physical controls, listening and subjective quality remain human acceptance checks.
+
+## Rhythmic chops / automatic pad feedback candidate
+
+This is a paired ABI2 update. Include src/dialogue.py in the runtime whitelist;
+its Event pad field changes the native/Python layout. The stage manifest records
+abi2 and upstream10f5e1d. Never use the prior native engine or an earlier delta
+helper's fixed added-files allowlist. Follow the existing checkpoint/owner/hash,
+silent device suite/ALSA/USB qualification and60second normal-health gates above.
+The previous accepted ABI1 source/native/manifest must remain together for rollback.

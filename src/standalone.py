@@ -87,10 +87,9 @@ class Instrument:
                 if pad>=len(bank['cuts']):return
                 self.chop=pad
                 if self.shift:return
-            if not self.manual[ch]:
-                if ch==0:
-                    index=self.drum_page*64+pad
-                    if index<len(self.catalog):self.request_next(index)
+            if ch==0 and self.shift:
+                index=self.drum_page*64+pad
+                if index<len(self.catalog):self.request_next(index)
                 return
             if number in self.held:self.send(8,identity=self.held.pop(number))
             self.identity+=1;identity=self.identity
@@ -184,9 +183,17 @@ class Instrument:
     def leds(self):
         ch=self.selected
         if ch==4:
-            return {n:(35 if self.manual[ch] and n-36<len(self.current['cuts']) else 0) for n in range(36,100)}
-        if self.manual[ch] and ch in (1,2,3):
+            leds={n:(100 if n in self.held else 35 if n-36<len(self.current['cuts']) else 0) for n in range(36,100)}
+        elif ch in (1,2,3):
             active={pad_pitch(n,self.octave) for n in self.held}
-            return {n:(37 if pad_pitch(n,self.octave) in active else 65 if pad_pitch(n,self.octave)%12==2 else 123 if pad_pitch(n,self.octave)%12 in (0,2,4,5,7,9,11) else 66) for n in range(36,100)}
-        return {n:(100 if n in self.held else (35 if self.manual[ch] else (12 if ch==0 and self.drum_page*64+n-36<len(self.catalog) else 0))) for n in range(36,100)}
+            leds={n:(37 if pad_pitch(n,self.octave) in active else 65 if pad_pitch(n,self.octave)%12==2 else 123 if pad_pitch(n,self.octave)%12 in (0,2,4,5,7,9,11) else 66) for n in range(36,100)}
+        else:leds={n:(100 if n in self.held else 35) for n in range(36,100)}
+        feedback=self.engine.feedback(ch)
+        if not self.manual[ch] and feedback and feedback[0]==self.current['revision']:
+            code=feedback[1]
+            if code>=128:
+                for n in leds:
+                    if pad_pitch(n,self.octave)==code-128:leds[n]=5
+            elif 1<=code<=64:leds[35+code]=5
+        return leds
     def close(self):self.pool.shutdown(wait=True,cancel_futures=True)

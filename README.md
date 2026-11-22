@@ -16,11 +16,14 @@ checks pass. Existing recordings/sessions
 are preserved. Physical listening and pad feel remain human checks; see
 [validation](docs/STANDALONE_VALIDATION.md).
 
-Press Play to start or stop. Select a channel with the six top buttons; hold Shift and
-press its lower button for Manual, then play the pads. Mix exposes six channel
-levels on the first six encoders; the Volume encoder adjusts master. In Drums
-Auto, pads choose a take, arrows switch catalog pages, and Repeat requests
+Press Play to start or stop. Select a channel with the six top buttons; play pads in either mode; hold Shift and
+press its lower button to disable automatic triggers for that channel. Mix exposes six channel
+levels on the first six encoders; the Volume encoder adjusts master. For Drums,
+Shift+pads choose a take, arrows switch catalog pages, and Repeat requests
 another compatible take. Changes arrive at the next 16-bar boundary.
+
+The candidate adds source-derived rhythmic chops and automatic red pad feedback;
+see [portable dialogue policy](docs/DIALOGUE_PORT.md) for scope and validation.
 
 With Chops selected, Repeat fetches fresh archive material directly on Push.
 Shift+lower5 enables Manual; lit pads play unique consecutive editable cuts across the full phrase while held.

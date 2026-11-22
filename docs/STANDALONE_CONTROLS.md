@@ -6,7 +6,8 @@
 - Top102–107 select Drums, Bass, Lead, Mids, Chops, Film. Wheel70 moves one channel
   per nonzero packet. Selection alone changes no notes or modes.
 - Lower20–25 mute/unmute corresponding channels. **Shift49 + lower** toggles that
-  channel's Auto/Manual. Auto/Manual suppresses automatic notes and leaves the
+  channel's Auto/Manual. Both modes accept the same pad playing. Manual suppresses
+  only future automatic onsets and leaves sounding notes and the
   common take clock evolving; manually held onsets keep their original source.
 - Mix112: encoders71–76 change six corresponding channel levels. Device110 or
   Note50: the full display shows eight selected-channel effects on Sound, Space
@@ -14,24 +15,24 @@
   page, initially Sound. Encoders71–78 edit that page. Chops/Film additionally
   have Cuts: encoders76–78 retain Start/Length/Pad. Volume79 changes master.
   See [channel effects](CHANNEL_FX.md) for all24parameters, ranges and DSP.
-- Melodic Manual pads36–99: exact Stillwater default centered D Dorian grid,
+- Melodic pads36–99: exact Stillwater default centered D Dorian grid,
   right+1scale degree, up+3. All three note channels span MIDI38–86 at octave0;
   the movable triangle plays D/F/A. Root pads use Silt65, natural notes123,
   accidentals66 and held exact-pitch duplicates37. Arrows62/63 move octave, bounded to a complete
   MIDI0–127 window. Velocity changes onset loudness; release addresses the held
   token even after channel/octave/programme changes. Pressure is not mapped.
-- Drums Auto pads select catalog entry1–64; arrows toggle to entries65–100.
+- Drums Shift+pads select catalog entry1–64 in either mode; arrows toggle to entries65–100.
   Dark/unassigned pads do nothing. Repeat56 requests a different tempo-compatible
   take. Selection queues preparation for the next64-beat boundary; it does not
-  cut the current full take. Drums Manual pads repeat four fixed PCM cuts across
+  cut the current full take. Drums pads in both modes repeat four fixed PCM cuts across
   all64pads (pad index modulo4), with release. These are source slices, not
   promised kick/snare labels or complete-loop latches.
-- Chops Manual: up to64 consecutive held cuts walk through the complete available
+- Chops in either mode: up to64 consecutive held cuts walk through the complete available
   phrase in source order, left to right then up the grid. Each cut appears once;
   only populated pads light and unused pads do nothing.
   Hold a pad to play its cut once to the end; releasing it stops that cut with
   the native256-frame (5.8ms) click-free release. It never loops while held.
-  Film Manual: each pad triggers the current complete8second anchor line.
+  Film in either mode: each pad triggers the current complete8second anchor line.
   They launch immediately, without forced sixteenth quantization. Pad release
   leaves the Film anchor sounding; Delete118 releases all manual voices.
 - Help81 opens controls/collection credit; press again to close. The asset JSON
@@ -82,3 +83,13 @@ Manual. Film remains the quiet full source at .16 gain. Both use the same film
 recording; chopping does not isolate speech from its original soundtrack.
 Editing a manual cut recalculates its gain on the control thread for the new
 range, with the same .6 peak ceiling.
+
+Automatic successful native onsets briefly mark their pad red (at most120ms,
+shorter for a shorter gate/source). Manual notes retain their held colour and
+never create automatic red feedback. Chops maps the exact chronological cut;
+melodic channels map the actual MIDI pitch in the current octave, including
+its duplicate positions. Continuous Drum/Film playback has no invented pad trigger and does not flash a proxy pad. Feedback
+is channel/source-revision scoped and clears on Stop, mute or entry to Manual.
+Shift+Drums pads select the catalog silently in both modes; arrows choose the
+catalog page and Repeat requests another take. Full channel FX stay on all eight
+knobs. See DIALOGUE_PORT.md for the source-derived rhythmic chop policy.

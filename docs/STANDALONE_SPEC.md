@@ -7,13 +7,13 @@ TCP controller peer, AI image generation or model service is required.
 Each of six mixer channels has Auto/Manual, mute and24bus effects across
 Sound, Space and Motion pages; Device/Note devotes the whole screen to the
 selected channel. Mix retains the overview. See CHANNEL_FX.md for the contract. Play toggles the local AJ Hall-backed arrangement; manual channels suppress
-only their automatic notes and remain playable while the common timeline runs.
+only future automatic onsets; both modes remain playable while the common timeline runs.
 Drums, harmony, prepared film chops and instrument programmes change together
 at a 16-bar/64-beat boundary. Held notes retain their original sample identity.
 Manual chops launch immediately and reuse exactly the prepared PCM.
 
 The authoritative source is pj4533/Liminal main at
-67fde8da0c18bb8ace86d0a03a866f5670f141d6. The portable policy subset follows
+10f5e1d2758b5f05007221673cc476ce6c9048e2. The portable policy subset follows
 LofiScore's motif onsets/contours, theme/variation/breakdown/return, answer
 figures, sample calibration and LofiPreset's acoustic programmes. Source
 16-beat phrases remain internal composition units. PJ's explicit override moves
@@ -47,3 +47,6 @@ host ARM engine on x86_64 Push or bypass changed SSH identity verification.
 The original user wording is retained in the private task artifact
 user-specification.md. This project specification is the durable implementation
 contract; older controller documentation describes the superseded branch only.
+
+The latest dialogue-policy extraction and deliberate platform differences are
+documented in DIALOGUE_PORT.md. No Mac controller integration is reintroduced.

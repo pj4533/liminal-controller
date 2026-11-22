@@ -36,11 +36,13 @@ class CoverageTests(unittest.TestCase):
             archive=dict(pcm=pcm,cuts=chops(pcm),credit=dict(sha256='live')) if live else None
             with patch('composition.read_pcm',return_value=(pcm,SR)),patch('composition.Path.exists',return_value=True):
                 bank=prepare(Instruments(),ROOT,[dict(file='test.wav')],0,0,line_index=2,archive=archive)
+            self.assertTrue(all(not e.get('pad') for e in bank['events'] if e['channel'] in (0,5)))
             cuts=bank['cuts'];self.assertEqual(cuts[0][0],0 if live else SR*16)
             self.assertEqual(cuts[-1][0]+cuts[-1][1],SR*(48 if live else 24))
             self.assertEqual(len(bank['chop_gains']),len(cuts));self.assertEqual(len(bank['pcm']),15)
             for event in (e for e in bank['events'] if e['channel']==4):
-                self.assertEqual(len(bank['pcm'][-event['sample']-1])//2,event['gate'])
+                self.assertLessEqual(event['gate'],len(bank['pcm'][-event['sample']-1])//2)
+                self.assertIn(event['pad'],range(1,len(cuts)+1))
 
     def ui(self,engine):
         ui=Instrument.__new__(Instrument);ui.fx_pages=[0,0,0,0,3,3];ui.effects=[defaults(ch) for ch in range(6)];ui.engine=engine;ui.last_bank=engine.status()['bank'];ui.settings=False;ui.shift=False;ui.held={};ui.identity=0;ui.selected=4;ui.manual=[True]*6;ui.chop=0;ui.edits={};ui.edit_gains={};ui.mix=False;ui.archive=None;ui.archive_dirty=False;ui.error='';ui.next_slot=None;ui.pending=None

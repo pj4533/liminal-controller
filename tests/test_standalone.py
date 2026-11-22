@@ -26,8 +26,8 @@ class NativeTests(unittest.TestCase):
         self.assertEqual(max(map(abs,self.s.render(512))),0);self.assertEqual(self.s.status()['position'],512)
     def test_manual_audible_stopped(self):
         slot=self.s.install(self.bank());self.s.render(1);self.s.command(3,2,1);self.s.command(7,slot,identity=42,event=Event(channel=2,sample=0,gate=1000,speed=1,gain=.5,attack=8,release=32));self.assertGreater(max(map(abs,self.s.render(512))),.001)
-    def test_manual_cannot_launch_in_auto(self):
-        slot=self.s.install(self.bank());self.s.command(7,slot,identity=42,event=Event(channel=2,sample=0,gate=1000,speed=1,gain=.5,attack=8,release=32));self.assertEqual(max(map(abs,self.s.render(512))),0)
+    def test_manual_can_launch_in_auto(self):
+        slot=self.s.install(self.bank());self.s.render(1);self.s.command(7,slot,identity=42,event=Event(channel=2,sample=0,gate=1000,speed=1,gain=.5,attack=8,release=32));self.assertGreater(max(map(abs,self.s.render(512))),.001)
     def test_mute_and_master(self):
         self.s.install(self.bank(length=10000));self.s.command(1);self.s.render(1024);self.s.command(5,2,1);self.s.render(12000);self.assertLess(max(map(abs,self.s.render(512))),1e-6)
     def test_stop_hush_and_reset(self):

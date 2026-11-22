@@ -1,7 +1,7 @@
 # Standalone architecture
 
 `standalone_app.py` owns one MIDI reader, USB display and native engine. It has
-no remote-control peer or listener. `sampler.py` is a separate ABI1 and does not
+no remote-control peer or listener. `sampler.py` is a separate ABI2 and does not
 reuse Stillwater's role-bank synth. The only cross-compiled binary is x86_64;
 the host ARM binary is memory-render testing only.
 
@@ -17,7 +17,8 @@ queue exhaustion fails the app safely instead of dropping a release.
 
 One immutable bank holds every channel's schedule/programmes, drum take,
 harmony and film chops. Publication applies together at a64-beat boundary.
-Auto/Manual changes suppress auto notes without resetting this timeline. Mixer
+Auto/Manual changes suppress only future automatic onsets without resetting this
+timeline or releasing sounding voices. Pads play identically in either mode. Mixer
 changes do not retrigger drum takes. Missing next preparation repeats the
 current take and says PREPARING/REPEATING CURRENT. A replacement drum choice is
 prepared off-thread and replaces the queued next bank; it cannot splice an
@@ -65,7 +66,7 @@ Suggested cuts partition the full decoded window into up to64 consecutive
 regions, aiming for750ms and preferring nearby low-energy boundaries. There are
 no gaps, overlaps or repeated pad assignments. The offline fallback exposes its
 complete current8second line. Manual offsets address all regions without extra
-PCM copies; eight automatic slice slots sample across that bank within the
+PCM copies; eight automatic slice slots choose articulated cuts across that bank within the
 existing native capacity. Only populated Manual Chops pads light or trigger.
 The composition worker copies suggested energy/silence cuts into normal banks;
 fresh footage and automatic edits publish only at64-beat boundaries. Manual
@@ -114,3 +115,11 @@ new audio-thread analysis, allocation or PCM rewrite is introduced.
 
 The full selected-channel Device/Note UI and24parameter bus FX are documented
 in CHANNEL_FX.md. ABI1 now adds command16 while preserving onset/bank ownership.
+
+The D125–127 acoustic port is described in DIALOGUE_PORT.md. Native ABI2 appends
+pad feedback identity to Event and provides lm_abi/lm_feedback. Python refuses
+an older native engine; source, native binary and manifest must update together.
+Successful native automatic onsets publish atomic channel/revision/pad feedback;
+voice rejection and manual onsets cannot create a flash. Expiry uses the audio
+sample clock, bounded to120ms or shorter gate/source duration. Stop/mute/Manual
+clear it. No schedule scanning or wall-clock estimation drives the red pads.
