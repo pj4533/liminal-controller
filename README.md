@@ -6,11 +6,11 @@ slowly crossfading collection images behind readable controls. No Mac instance,
 controller connection, AI music/image service or network listener is needed.
 Boot starts stopped; Play toggles the local arrangement.
 
-**Status:** live Push runtime **a89cc365cb669e12793dfe8c6d20de7d007079dc**.
+**Status:** live Push runtime **9ea6e6152ac242f3c85e6dc2adac31b544ac4cc5**.
 Live Internet Archive newsreel sourcing, background decoding, boundary publication
 and editable manual chops pass actual silent device qualification. Play toggles
 play/stop, melodic pads use Stillwater defaults, drums start dry, and chops have
-bounded foreground gain. All118device tests and234private-library rehearsal
+bounded foreground gain. All125device tests and234private-library rehearsal
 checks pass. Existing recordings/sessions
 are preserved. Physical listening and pad feel remain human checks; see
 [validation](docs/STANDALONE_VALIDATION.md).

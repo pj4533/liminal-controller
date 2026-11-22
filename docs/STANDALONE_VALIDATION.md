@@ -218,3 +218,43 @@ init, stock/recovery paths and OS were preserved; no reboot was needed for this
 Python control/preparation change. Private deployment log/checkpoint details
 remain outside git. Physical listening, button presses and pad feel remain PJ's
 acceptance; silent controls/counters/PCM checks establish only technical behavior.
+
+
+## Held Manual Chops — 2026-11-22 UTC
+
+Live runtime `9ea6e6152ac242f3c85e6dc2adac31b544ac4cc5`. Manual Chops now
+retains each pad's onset token: note-off or velocity-zero note-on stops that
+voice through the existing256-frame (5.8ms) native release. Holding plays the
+slice once to its end, without looping. Separate Film anchors remain one-shots.
+Unique chronological full-phrase cuts, inactive pads, gain, automatic refresh,
+Auto playback and onset-owned PCM/ranges remain unchanged.
+
+`sh scripts/build-native.sh` and verified Zig0.13x86 build pass. Host
+`python3 -m unittest discover -s tests -v`:125passed,0failed (2.970s).
+Seven new native-backed tests cover early/wire/zero-velocity releases, slice-end
+termination without looping, overlap/retrigger/stale old-pad release, release
+after edit/selection/mode/source changes, Stop/Delete and unchanged Film.
+Private-library rehearsal:234passed,0failed;37source/scriptfiles parse asPython3.10.
+Actual Push suite:125passed,0failed (3.847s).
+
+Exclusive master-zero device qualification passed synthetic wire note-off and
+velocity-zero releases, overlap, retrigger, stale prior-pad release, mode change,
+hold-to-end/no-loop, repress and Stop. ALSA written frames9,721→123,932,
+xruns0→0,overflow0;20USBframes. Stop ended at0voices/peak. Observation waits
+include control pumping/display work and do not measure physical pad latency.
+
+All279runtime hashes passed. Manifest SHA256
+`ce0bf07b97442d99569f23abdb00822d5e6162030d4dc81f16be2304bfcb20ba`;
+paired x86 engine remains byte-identical to the previous accepted build.
+Normal service then passed60.277s fresh stopped readiness: no errors, voices,
+peak or overflow; xruns0→0; ALSAframes21,505→2,678,273, written21,319→2,678,214,
+display3→600; NEXT READY=true. One app exclusively owned USB/MIDI/PCM.
+Recording inventory and session hashes matched the stopped checkpoint; primary
+init was unchanged. No OS/recovery/GRUB change, reboot or Drift runtime update.
+Physical listening, button presses and pad feel remain human acceptance checks.
+
+Two private rollout checks first triggered successful automatic rollback: the
+new qualifier initially used exact-zero instead of the existing1e-8 silent-peak
+tolerance; a retry then refused an already retained source-test directory. Both
+were harness issues corrected before the final successful rollout. Checkpoints,
+logs and operational continuation remain private, outside source control.
