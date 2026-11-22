@@ -26,7 +26,7 @@ typedef struct { int live,bank,id,age,releasing,left; Event e; double pos; float
 typedef struct {
  Sample samples[NS]; Bank banks[NB]; _Atomic int state[NB];
  Command queue[NQ]; _Atomic unsigned read,write; Voice voices[NV];
- int hush,current,next,position,event,playing,manual[NC],muted[NC];
+ int stopped_next; int hush,current,next,position,event,playing,manual[NC],muted[NC];
  float level[NC],smooth[NC],tone[NC],master,master_smooth;
  Fx fx[NC];
  int flash_pad[NC],flash_revision[NC],flash_left[NC];
@@ -42,7 +42,7 @@ typedef struct {
 int lm_abi(void){return 2;}
 void *lm_create(void){
  Engine *s=calloc(1,sizeof *s);if(!s)return NULL;
- s->current=s->next=-1;s->master=.45f;
+ s->stopped_next=s->current=s->next=-1;s->master=.45f;
  for(int i=0;i<NC;i++){s->level[i]=.65f;s->tone[i]=.55f;fx_init(&s->fx[i],i);s->fx[i].target[8]=s->fx[i].value[8]=0;s->fx[i].target[12]=s->fx[i].value[12]=0;}
  atomic_store(&s->shown_bank,-1);return s;
 }
@@ -110,6 +110,7 @@ static void commands(Engine *s){
    case 11:if(ch>=0&&ch<NC)s->tone[ch]=fminf(1,fmaxf(0,c.event.gain));break;
    case 12:if(ch>=0&&ch<NC)s->fx[ch].target[8]=bound(c.event.gain,0,.4f);break;
    case 13:if(ch>=0&&ch<NC)s->fx[ch].target[12]=bound(c.event.gain,0,.35f);break;
+   case 17:if(ch>=0&&ch<NB)s->stopped_next=ch;break;
    case 16:if(ch>=0&&ch<NC&&c.b>=0&&c.b<NP){float v=bound(c.event.gain,fx_specs[ch][c.b][0],fx_specs[ch][c.b][1]);s->fx[ch].target[c.b]=(c.b==9||c.b==22)?roundf(v):v;if(c.b==0)s->level[ch]=v;}break;
    case 14:if(ch>=0&&ch<NC)s->fx[ch].target[7]=bound(c.event.gain,-1,1);break;
   }
@@ -118,6 +119,18 @@ static void commands(Engine *s){
 }
 void lm_render(Engine *s,float *out,int count){
  commands(s);float peak=0;
+ /* Explicit worker publication while stopped, deferred until every voice and
+    admitted onset is clear. Playing publication remains the64-beat boundary.
+    The transitional state blocks racing old-bank admissions during the swap. */
+ if(!s->playing&&s->next>=0&&s->next==s->stopped_next){
+  int busy=0;for(int i=0;i<NV;i++)if(s->voices[i].live)busy=1;
+  int old=s->current,expected=2;
+  if(!busy&&old>=0&&atomic_compare_exchange_strong(&s->state[old],&expected,3)){
+   s->current=s->next;s->next=s->stopped_next=-1;s->position=s->event=0;
+   atomic_store(&s->shown_bank,s->current);atomic_store(&s->state[old],2);
+   for(int ch=0;ch<NC;ch++)s->flash_left[ch]=0;
+  }
+ }
  for(int n=0;n<count;n++){
   for(int ch=0;ch<NC;ch++)if(s->flash_left[ch]>0)s->flash_left[ch]--;
   if(s->playing&&s->current>=0){

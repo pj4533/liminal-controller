@@ -42,6 +42,7 @@ class Instrument:
         if index is not None:self.queued_drum=index
         if self.pending is not None or (self.next_slot is not None and index is None and not refresh):return
         current=self.engine.banks[self.last_bank][1]
+        self.stopped_refresh=bool(index is not None or self.archive_dirty or not current.get('dialogue'))
         if self.queued_drum is None:index=choose_drum(self.catalog,current['bpm'],self.catalog[current['drum']]['sha256'],random.Random(1042+self.next_revision))
         else:index=self.queued_drum;self.queued_drum=None
         self.pending=self.pool.submit(prepare,self.instruments,self.assets,self.catalog,self.next_revision,index,current['bpm'],1042,self.ledger.choose(current['line_index']),self.archive,self.speech);self.next_revision+=1;self.archive_dirty=False
@@ -65,7 +66,9 @@ class Instrument:
                 if self.archive_dirty:
                     self.pending=None;self.request_next(refresh=True);return status
                 slot=self.engine.install(prepared)
-                if slot is not None:self.next_slot=slot;self.pending=None;self.error=''
+                if slot is not None:
+                    self.next_slot=slot;self.pending=None;self.error=''
+                    if self.stopped_refresh:self.send(17,slot)
             except Exception as e:self.pending=None;self.error='PREP ERROR '+str(e)[:55]
         return status
     @property
@@ -135,7 +138,7 @@ class Instrument:
             if number==79:
                 self.master=min(1,max(0,self.master+delta*.01));self.send(10,event=Event(gain=self.master));return
             knob=number-71;ch=self.selected
-            if not self.mix and self.fx_pages[ch]==3 and ch in (4,5) and knob in (5,6,7):
+            if not self.mix and self.fx_pages[ch]==4 and ch in (4,5) and knob in (5,6,7):
                 count=len(self.current['cuts'])
                 if not count:return
                 self.chop=min(self.chop,count-1)
@@ -159,7 +162,7 @@ class Instrument:
                 return
             if self.mix:
                 if knob<6:self.level[knob]=min(1,max(0,self.level[knob]+delta*.01));self.effects[knob][0]=self.level[knob];self.send(4,knob,event=Event(gain=self.level[knob]))
-            elif self.fx_pages[ch]<3:
+            elif self.fx_pages[ch]<4:
                 p=page_parameters(ch,self.fx_pages[ch])[knob]
                 self.effects[ch][p.id]=p.edit(self.effects[ch][p.id],delta)
                 if p.id==0:self.level[ch]=self.effects[ch][0]

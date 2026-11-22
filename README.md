@@ -6,15 +6,11 @@ slowly crossfading collection images behind readable controls. No Mac instance,
 controller connection, AI music/image service or network listener is needed.
 Boot starts stopped; Play toggles the local arrangement.
 
-**Status:** live Push runtime **c92fb2f60fdf29d73ca1a554b2a619a575e6071e**.
-Offline text-aware chops, unique Ableton Slicing pads and actual native Auto
-feedback pass silent device qualification alongside manual playing. Fresh local
-base.en inference completed while ALSA/USB continued with zero xruns. All183
-device tests and257private-library rehearsal checks pass;295paired runtime files
-are hash verified. Recordings/sessions and recovery remain preserved. The normal
-service passed60seconds healthy and stopped. Physical listening, visible pad
-colours and pad feel remain human checks; see
-[validation](docs/STANDALONE_VALIDATION.md).
+**Status:** deployed runtime c92fb2f has a reproduced one-pad Chops defect.
+This candidate separates local text protection from chopping and Auto order,
+publishes safely while stopped, and adds a first Effects page with Echo/Reverb.
+See [mandatory real-source release gate](docs/CHOP_REGRESSION_GATE.md).
+Device qualification and physical listening for this candidate are pending.
 
 Press Play to start or stop. Select a channel with the six top buttons; play pads in either mode; hold Shift and
 press its lower button to disable automatic triggers for that channel. Mix exposes six channel
@@ -28,12 +24,13 @@ see [portable dialogue policy](docs/DIALOGUE_PORT.md) for scope and validation.
 With Chops selected, Repeat fetches fresh archive material directly on Push.
 Shift+lower5 enables Manual; lit pads play unique consecutive editable cuts across the full phrase while held.
 Release stops the cut; holding plays it to the end once, without looping. On the Device/Note Cuts page (lower7/8),
-encoder6 sets start,7 length,8 selected cut; Shift gives finer editing. Fresh footage is requested at every take transition in Auto and Manual. New
-sources arrive at the next16-bar boundary. No computer is required; internet
+encoder6 sets start,7 length,8 selected cut; Shift gives finer editing. Fresh footage is requested at every take transition in Auto and Manual. While playing, new
+sources arrive at the next16-bar boundary. While stopped, prepared requests
+publish after all voices finish; a held pad defers publication. No computer is required; internet
 is needed for fresh sources, and failures retain local material.
 
 Device/Note fills the screen with eight effects for the selected channel.
-Lower7/8 changes Sound/Space/Motion pages; Chops/Film also have Cuts.
+Lower7/8 changes Effects/Sound/Space/Motion pages; Chops/Film also have Cuts.
 See [all channel effects and controls](docs/CHANNEL_FX.md).
 
 Read [specification](docs/STANDALONE_SPEC.md),

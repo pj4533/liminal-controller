@@ -89,7 +89,16 @@ def plan(pcm,cuts,drums,bpm,revision,seed=1042,semantic=None):
     template=TEMPLATES[(seed+revision//2)%len(TEMPLATES)];count=len(selected)
     signature=semantic['signature'] if semantic else 0;response=semantic['response'] if semantic else min(1,count-1);third=min(3 if semantic else 2,count-1)
     if semantic and not semantic['reorder']:
-        return [(s,0,None,times[s]) for s in (0,64,128,192)],selected,times
+        # Cut availability is independent of permission to scramble speech.
+        # Restricted lines retain complete fragments in source order, with a
+        # full-line introduction/outro and enough space to hear every group.
+        result=[(0,0,None,times[0])];blocked=cuts[0][1]/SR+.06
+        for piece in sorted(range(1,count),key=lambda p:cuts[p][0]):
+            step=next((s for s in range(16,192) if times[s]>=blocked),None)
+            if step is None or times[step]+cuts[piece][1]/SR+.06>times[192]:break
+            result.append((step,piece,None,times[step]));blocked=times[step]+cuts[piece][1]/SR+.06
+        result.append((192,0,None,times[192]))
+        return result,selected,times
     hits={0:(0 if semantic else signature,None),24:(response,2)} # intro statement and tag
     # Repeating two-bar hook, filled against the real take's energy attacks.
     for base in (32,64,96):

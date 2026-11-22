@@ -1,5 +1,5 @@
 """Text-aware Liminal D124–127 selection, adapted from PJ Gray's MIT source.
-NLTK POS is not NER: uncertain capitalized/name clauses remain indivisible.
+NLTK POS is not NER: protection is local, independent of cut availability.
 """
 import json
 import math
@@ -52,20 +52,25 @@ def interest(words,values,tags):
     return min(1,max(0,score))
 
 def protected(words,tags):
-    """Conservative replacement for NLTagger protected-span policy.
-    Names and uncertain capitalization protect the complete sentence. Local
-    grammatical spans never cross sentence punctuation; contractions stay atoms.
+    """Protect local names and grammatical atoms, never a capitalized sentence.
+    POS alone is noisy on archive speech. A name needs noninitial capitalization
+    or adjacent capitalized proper nouns; sentence starts are ordinary words.
     """
     spans=[];n=len(words)
     for i,(word,tag) in enumerate(zip(words,tags)):
         raw=word['text'];w=normalize(raw)
-        uncertain_name=raw[:1].isupper() and w not in FUNCTION|MARKERS and not tag.startswith('VB') and lexical(w)==0
-        if tag in ('NNP','NNPS') or uncertain_name:return [(0,n)]
-        if w in NEGATIONS or w.endswith("n't") or "n't" in w:
+        capital=raw[:1].isupper() and w not in FUNCTION|MARKERS and w!='i'
+        adjacent=i+1<n and words[i+1]['text'][:1].isupper() and tags[i+1] in ('NNP','NNPS')
+        if capital and tag in ('NNP','NNPS') and (i>0 or adjacent):
+            end=i+1
+            while end<n and words[end]['text'][:1].isupper() and tags[end] in ('NNP','NNPS') and words[end-1]['text'][-1:] not in ',.;:!?':end+=1
+            spans.append((i,end))
+        if w in NEGATIONS or "n't" in w:
             end=min(n,i+4)
             for j in range(i+1,end):
+                if words[j-1]['text'][-1:] in ',.;:!?':end=j;break
                 if tags[j].startswith(('VB','JJ','NN')):end=j+1;break
-            spans.append((max(0,i-1) if i and tags[i-1].startswith('VB') else i,end))
+            spans.append((max(0,i-1) if i and tags[i-1].startswith(('VB','MD')) else i,end))
         elif tag in ('DT','PRP','CD'):
             wanted=('VB',) if tag=='PRP' else ('NN',)
             for j in range(i+1,min(n,i+5)):
@@ -104,13 +109,23 @@ class Selector:
                 if word['text'][-1:] in '.?!':joined.append(pending);pending=[]
         if pending:joined.append(pending)
         for words in joined:
-            tags=[t for _,t in self.tagger.tag([w['text'] for w in words])]
+            tags=[t for _,t in self.tagger.tag([w['text'].strip('.,;:!?\"()') for w in words])]
             values=weights(words,tags);span=refine(pcm,words[0]['start'],words[-1]['end'])
             if span and .2<=span[1]/SR<=10:candidates.append((interest(words,values,tags),words,tags,values,span))
         if not candidates:raise ValueError('No audible text line; keeping current bank')
         candidates.sort(key=lambda c:(-c[0],c[1][0]['start']))
-        # Retain the strongest line/word anchor across evolving64-beat arrangements.
-        chosen_line=candidates[(revision//4)%min(3,len(candidates))]
+        # Prefer usable vocabulary over a high-interest indivisible statement.
+        # Local guards and lexical atoms determine availability independently of
+        # whether Auto may reorder them. True one-word sources stay explicit.
+        usable=[]
+        for candidate in candidates:
+            _,ws,ts,vs,span=candidate;gs=protected(ws,ts)
+            atoms=[(a,b) for a,b in gs if b-a>1]
+            atoms += [(i,i+1) for i,v in enumerate(vs) if v>0 and not any(a<=i<b for a,b in gs if b-a>1)]
+            shorter={cut for a,b in atoms if (cut:=refine(pcm,ws[a]['start'],ws[b-1]['end'])) and cut[1]<span[1]*.85}
+            if len(shorter)>=2:usable.append(candidate)
+        choices=usable or candidates
+        chosen_line=choices[(revision//4)%min(3,len(choices))]
         _,words,tags,values,whole=chosen_line;guards=protected(words,tags)
         protected_units={0}
         units=[whole];texts=[' '.join(w['text'] for w in words)];scores=[0]
@@ -138,4 +153,4 @@ class Selector:
         signature=role[0] if role else 0
         response=role[1] if len(role)>1 and scores[chosen[role[1]]]>.25 else 0
         cuts=[units[i] for i in chosen];labels=[texts[i] for i in chosen]
-        return dict(cuts=cuts,labels=labels,line=texts[0],interest=chosen_line[0],protected=guards,protected_cuts=[j for j,i in enumerate(chosen) if i in protected_units],reorder=(0,len(words)) not in guards,signature=signature,response=response)
+        return dict(cuts=cuts,labels=labels,line=texts[0],interest=chosen_line[0],protected=guards,protected_cuts=[j for j,i in enumerate(chosen) if i in protected_units],reorder=not guards,quality='TEXT' if len(cuts)>=3 else 'LIMITED TEXT',signature=signature,response=response)

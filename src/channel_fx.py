@@ -55,7 +55,7 @@ PARAMETERS=(
  Parameter(9,'DIVISION',0,5,2,1,choices=DIVISIONS),
  Parameter(10,'FEEDBACK',0,.65,.35,.01,'%'),
  Parameter(11,'ECHO TONE',800,12000,6000,1,'Hz',logarithmic=True),
- Parameter(12,'ROOM MIX',0,.35,.10,.01,'%'),
+ Parameter(12,'REVERB',0,.35,.10,.01,'%'),
  Parameter(13,'DECAY',.2,4,1.2,.05,'s'),
  Parameter(14,'DAMPING',1500,12000,6000,1,'Hz',logarithmic=True),
  Parameter(15,'PREDELAY',0,60,0,1,'ms'),
@@ -68,7 +68,7 @@ PARAMETERS=(
  Parameter(22,'TREM DIV',0,5,3,1,choices=DIVISIONS),
  Parameter(23,'CRUSH',0,1,0,.01,'%'),
 )
-PAGES=('SOUND','SPACE','MOTION')
+PAGES=('EFFECTS','SOUND','SPACE','MOTION')
 def pages(channel):return PAGES+('CUTS',) if channel in (4,5) else PAGES
 
 def parameters(channel):
@@ -85,4 +85,9 @@ def parameters(channel):
 
 def defaults(channel):return [p.default for p in parameters(channel)]
 
-def page_parameters(channel,page):return parameters(channel)[page*8:page*8+8] if page<3 else ()
+def page_parameters(channel,page):
+    params=parameters(channel)
+    if page==0:
+        ids=(0,1,2,8,9,10,12,13)
+        return tuple(replace(params[i],label={8:'ECHO',9:'ECHO TIME'}.get(i,params[i].label)) for i in ids)
+    return params[(page-1)*8:page*8] if page<4 else ()

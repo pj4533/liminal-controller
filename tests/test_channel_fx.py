@@ -13,10 +13,19 @@ from standalone import Instrument
 from standalone_render import fit
 
 class FxTests(unittest.TestCase):
-    def capture(self,changes=(),ch=2,seconds=1,impulse=False,other=()):
+    def capture(self,changes=(),ch=2,seconds=1,impulse=False,other=(),dispatch=False):
         s=Sampler(ROOT/'.build/engine.so')
         try:
-            for channel,p,v in list(other)+[(ch,p,v) for p,v in changes]:s.command(16,channel,p,event=Event(gain=v))
+            if dispatch:
+                ui=FxControlTests().ui();ui.engine=s;ui.send=lambda *args,**kw:s.command(*args,**kw);ui.selected=ch
+                for p,value in changes:
+                    knob=next(i for i,param in enumerate(page_parameters(ch,0)) if param.id==p)
+                    spec=parameters(ch)[p];ticks=round((value-ui.effects[ch][p])/spec.step)
+                    while ticks:
+                        delta=max(-63,min(63,ticks));ui.event(dict(kind='cc',number=71+knob,value=delta%128));ticks-=delta
+                    self.assertAlmostEqual(ui.effects[ch][p],value)
+            else:
+                for channel,p,v in list(other)+[(ch,p,v) for p,v in changes]:s.command(16,channel,p,event=Event(gain=v))
             # Settle parameter smoothing before a fresh source starts.
             s.render(6000)
             pcm=array.array('f',([.7,.25]*16+[0,0]*(SR*3-16)) if impulse else (v for i in range(SR*3) for v in ((.4 if i%4000<2000 else .08)*math.sin(i*.137)+.10*math.sin(i*.013),.2*math.sin(i*.151))))
@@ -25,6 +34,13 @@ class FxTests(unittest.TestCase):
             return list(s.render(round(SR*seconds)))
         finally:s.close()
     def difference(self,a,b):return math.sqrt(sum((x-y)**2 for x,y in zip(a,b))/len(a))
+    def test_prominent_echo_reverb_knobs_change_audio_on_every_channel(self):
+        for ch in range(6):
+            with self.subTest(channel=ch):
+                dry=self.capture(ch=ch,impulse=True)
+                for changes in ([(8,.4)],[(12,.35)],[(8,.4),(12,.35)]):
+                    wet=self.capture(ch=ch,impulse=True,changes=changes,dispatch=True)
+                    self.assertGreater(self.difference(dry,wet),1e-5)
     def test_each_sound_processor_changes_actual_pcm(self):
         dry=self.capture()
         for p,value in ((0,.2),(1,900),(2,900),(3,18),(4,6),(5,1),(6,0),(7,1)):
@@ -115,8 +131,8 @@ class FxTests(unittest.TestCase):
         class Prefix(C.Structure):
             _fields_=[('samples',Sample*256),('banks',Bank*4),('state',C.c_int*4),
                       ('queue',Command*1024),('read_write',C.c_uint*2),('voices',Voice*64),
-                      ('transport_modes',C.c_int*18),('levels',C.c_float*20),
-                      ('target',C.c_float*24),('value',C.c_float*24)]
+                      ('transport_modes',C.c_int*19),('levels',C.c_float*20),
+                      ('fx_alignment',C.c_int),('target',C.c_float*24),('value',C.c_float*24)]
         s=Sampler(ROOT/'.build/engine.so')
         try:
             native=Prefix.from_address(s.ptr)
@@ -183,18 +199,18 @@ class FxControlTests(unittest.TestCase):
         ui=self.ui()
         for ch in range(6):
             self.event(ui,102+ch)
-            for page in range(3):
+            for page in range(4):
                 self.assertEqual(ui.fx_pages[ch],page)
                 for knob,p in enumerate(page_parameters(ch,page)):
                     before=ui.effects[ch][p.id];self.event(ui,71+knob,1)
                     self.assertAlmostEqual(ui.effects[ch][p.id],p.edit(before,1))
                     self.assertEqual(ui.sent[-1][0],(16,ch,p.id))
                 self.event(ui,27)
-    def test_first_entry_sound_and_per_channel_page_memory(self):
+    def test_first_entry_effects_and_per_channel_page_memory(self):
         ui=self.ui();self.event(ui,106);self.assertEqual(ui.fx_pages[4],0)
         self.event(ui,27);self.event(ui,27);self.event(ui,107);self.assertEqual(ui.fx_pages[5],0)
-        self.event(ui,106);self.assertEqual(ui.fx_pages[4],2);self.event(ui,27);self.assertEqual(pages(4)[ui.fx_pages[4]],'CUTS')
-        self.event(ui,26);self.assertEqual(ui.fx_pages[4],2)
+        self.event(ui,106);self.assertEqual(ui.fx_pages[4],2);self.event(ui,27);self.assertEqual(pages(4)[ui.fx_pages[4]],'MOTION');self.event(ui,27);self.assertEqual(pages(4)[ui.fx_pages[4]],'CUTS')
+        self.event(ui,26);self.assertEqual(ui.fx_pages[4],3)
         self.assertFalse(ui.sent);self.assertEqual(ui.held,{36:19})
     def test_held_release_routes_before_settings_or_fx_view(self):
         ui=self.ui()

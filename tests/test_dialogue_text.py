@@ -28,6 +28,11 @@ class TimestampTests(unittest.TestCase):
     def test_collapsed_missing_backward_outside_and_bracket_events_rejected(self):
         for tokens in ([dict(text=' word',t_dtw=0),dict(text=' next',t_dtw=0)],[dict(text=' word')],[dict(text=' word',t_dtw=100),dict(text=' next',t_dtw=50)],[dict(text=' word',t_dtw=400)],[dict(text='[Music]',t_dtw=50)]):
             with self.subTest(tokens=tokens),self.assertRaises(ValueError):parse(document(tokens),3)
+    def test_split_bracket_markers_are_not_words(self):
+        tokens=[dict(text=w,t_dtw=10+i*20) for i,w in enumerate(['[','M','US','IC',' PLAY','ING',']'])]
+        with self.assertRaises(ValueError):parse(document(tokens),3)
+    def test_initial_capitalization_does_not_protect_whole_sentence(self):
+        self.assertNotIn((0,5),protected(spans('Last year people trained dogs.'),['JJ','NN','NNS','VBD','NNS']))
     def test_duplicate_or_reversed_segments_not_added(self):
         doc=document();doc['transcription']*=3
         self.assertEqual(len(parse(doc,3)['lines']),1)
@@ -42,7 +47,7 @@ class MeaningTests(unittest.TestCase):
         plain=spans('it is just the thing');pv=weights(plain,['PRP','VBZ','RB','DT','NN'])
         self.assertGreater(interest(words,v,['DT','JJ','NN','NN']),interest(plain,pv,['PRP','VBZ','RB','DT','NN']))
     def test_names_negation_contractions_numbers_remain_protected(self):
-        self.assertEqual(protected(spans('Sally do not open the door'),['RB','VB','RB','VB','DT','NN']),[(0,6)])
+        self.assertEqual(protected(spans('Sally do not open the door'),['RB','VB','RB','VB','DT','NN']),[(1,4),(4,6)])
         for text,tags,expected in [('we do not open',['PRP','VB','RB','VB'],(1,4)),("we can't sleep",['PRP','MD','VB'],(1,3)),('three red machines',['CD','JJ','NNS'],(0,3))]:
             self.assertTrue(any(a<=expected[0] and b>=expected[1] for a,b in protected(spans(text),tags)))
     def selector(self):
@@ -54,10 +59,13 @@ class MeaningTests(unittest.TestCase):
         self.assertTrue(any('dream' in t for t in selected['labels'][1:]));self.assertNotIn('the',selected['labels'][1:]);self.assertEqual(len(set(selected['cuts'])),len(selected['cuts']))
         hits,indices,grid=plan(pcm,selected['cuts'],pcm,69,0,semantic=selected)
         self.assertEqual(hits[0][1:3],(0,None));self.assertEqual(hits[-1][1:3],(0,None));self.assertGreaterEqual(hits[1][3],selected['cuts'][0][1]/SR)
-    def test_name_sentence_cannot_be_split_or_reordered(self):
+    def test_name_sentence_has_local_fragments_without_reordering(self):
         pcm=array.array('f',[.1,-.1])*(SR*5);words=spans('Sally do not open the door!');x=self.selector();x.tagger.tag.side_effect=lambda words:list(zip(words,['RB','VB','RB','VB','DT','NN']))
         selected=x.select(pcm,dict(lines=[dict(start=0,end=2.4,words=words)]),0)
-        self.assertEqual(len(selected['cuts']),1);self.assertFalse(selected['reorder'])
+        self.assertGreaterEqual(len(selected['cuts']),3);self.assertFalse(selected['reorder'])
+        hits,_,_=plan(pcm,selected['cuts'],pcm,69,0,semantic=selected)
+        self.assertGreaterEqual(len({h[1] for h in hits if h[1]>0}),2)
+        self.assertEqual([h[1] for h in hits[1:-1]],sorted([h[1] for h in hits[1:-1]],key=lambda p:selected['cuts'][p][0]))
     def test_protected_units_are_never_gated_or_interrupted_by_later_hits(self):
         pcm=array.array('f',[.1,-.1])*(SR*8)
         cuts=[(0,SR*2),(SR*2,SR),(SR*3,SR)]
@@ -108,3 +116,18 @@ class PadLayoutTests(unittest.TestCase):
         self.assertEqual([slice_note(i) for i in (0,3,4,15,16,31,32,47,48,63)],[36,39,44,63,68,95,40,67,72,99])
         self.assertEqual(len({slice_note(i) for i in range(64)}),64)
         for i in range(64):self.assertEqual(slice_index(slice_note(i)),i)
+
+class ActualTaggerRegressionTests(unittest.TestCase):
+    def test_archived_capitalized_name_number_negation_lines_keep_fragments(self):
+        model=ROOT/'.build/speech/averaged_perceptron_tagger_eng.zip'
+        self.assertTrue(model.is_file(),'Install verified POS artifact; actual-model regression must run')
+        selector=Selector(model);pcm=array.array('f',[.1,-.1])*(SR*30)
+        for fixture in sorted((ROOT/'tests/fixtures/dialogue').glob('*.json')):
+            transcript=parse(json.loads(fixture.read_text()),30)
+            for revision in (0,4,8,10):
+                with self.subTest(source=fixture.name,revision=revision):
+                    selected=selector.select(pcm,transcript,revision)
+                    self.assertGreaterEqual(len(selected['cuts']),3)
+                    self.assertGreaterEqual(sum(n<selected['cuts'][0][1]*.85 for _,n in selected['cuts'][1:]),2)
+                    hits,_,_=plan(pcm,selected['cuts'],pcm,69,revision,semantic=selected)
+                    self.assertGreaterEqual(len({p for _,p,_,_ in hits if p>0}),2)

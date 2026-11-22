@@ -26,7 +26,7 @@ def parse(document,seconds):
     Reject malformed segments instead of inventing precision. Punctuation has
     no independent alignment and stays attached to the preceding word.
     """
-    lines=[];last=0
+    lines=[];last=0;bracket=False
     if len(document.get('transcription',[]))>256:raise ValueError('Speech segment limit')
     for seg in document.get('transcription',[]):
         lo=seg['offsets']['from']/1000;hi=seg['offsets']['to']/1000
@@ -35,7 +35,16 @@ def parse(document,seconds):
         if len(seg.get('tokens',[]))>4096:continue
         for token in seg.get('tokens',[]):
             text=token['text']
-            if not text or '[' in text or '<|' in text:continue
+            if not text or '<|' in text:continue
+            # Whisper splits annotations across subword tokens and segments.
+            # Discard the complete bracket span before lexical grouping.
+            clean=''
+            for char in text:
+                if char=='[':bracket=True
+                elif char==']':bracket=False
+                elif not bracket:clean+=char
+            text=clean
+            if not text:continue
             if not any(c.isalnum() for c in text):
                 if groups:groups[-1]['text']+=text.strip()
                 continue
@@ -124,6 +133,14 @@ class Speech:
                 self.state='TEXT READY';return result
         except Exception as e:
             self.state='UNAVAILABLE';self.error=str(e)[:100];self.failed[key]=self.error
+            # Retain bounded parser evidence without recording additional audio.
+            # Successful cache filenames remain unchanged and never read these.
+            diagnostic=dict(source_sha256=hashlib.sha256(data).hexdigest(),options=OPTIONS,error=self.error)
+            if 'document' in locals():diagnostic['document']=document
+            try:
+                failure=cache/(key+'.failure.json');failure.write_text(json.dumps(diagnostic))
+                for old in sorted(cache.glob('*.failure.json'),key=lambda p:p.stat().st_mtime)[:-32]:old.unlink()
+            except OSError:pass
             if len(self.failed)>32:self.failed.pop(next(iter(self.failed)))
             raise
     def select(self,pcm,revision):

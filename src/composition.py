@@ -3,6 +3,7 @@ Motif/answer contours and articulation come from LofiScore; program rows from
 LofiPreset; octave calibration from LofiSampleBank. This is not Swift DSP parity.
 """
 import array
+import hashlib
 import math
 from pathlib import Path
 import random
@@ -123,7 +124,7 @@ def prepare(instruments,assets,catalog,revision,drum_index,bpm=69,seed=1042,line
         chop_gains=[chop_gain(film[start*2:(start+n)*2]) for start,n in cuts]
         # D125–127 portable acoustic arrangement; eight PCM slots, all Manual
         # chronological pads retained. Each automatic slice records its exact pad.
-        arrangement,selected,grid=plan(film,cuts,pcm,bpm,revision,seed,semantic or dict(signature=0,response=0,reorder=False))
+        arrangement,selected,grid=plan(film,cuts,pcm,bpm,revision,seed,semantic) if semantic else ([],[0],[])
         attacks=[]
         for index in selected:
             start,n=cuts[index]
@@ -162,4 +163,4 @@ def prepare(instruments,assets,catalog,revision,drum_index,bpm=69,seed=1042,line
     for event in events:
         if event['channel'] in (1,2,3) and event.get('frequency',0)>0:event['pad']=128+round(69+12*math.log2(event['frequency']/440))
     events.sort(key=lambda e:(e['frame'],e['channel'],e['sample']))
-    return dict(length=length,revision=revision,events=events,pcm=banks,drum=drum_index,bpm=bpm,programs=programs,pad=('Held '+piano[0],piano[1],.35,.85,.30,0),bass=bassprogram,tonic=tonic,scale=scale,film_credit=film_credit,drumcuts=[0]*16,drum_ranges=drum_ranges,line_index=line_index,anchor=10,chop_gains=chop_gains,archive_id=archive['credit']['sha256'] if archive else '',cuts=cuts,dialogue=semantic if (archive or film_path.exists()) else None)
+    return dict(source_sha256=hashlib.sha256(banks[1].tobytes()).hexdigest() if len(banks)>1 else None,length=length,revision=revision,events=events,pcm=banks,drum=drum_index,bpm=bpm,programs=programs,pad=('Held '+piano[0],piano[1],.35,.85,.30,0),bass=bassprogram,tonic=tonic,scale=scale,film_credit=film_credit,drumcuts=[0]*16,drum_ranges=drum_ranges,line_index=line_index,anchor=10,chop_gains=chop_gains,archive_id=archive['credit']['sha256'] if archive else '',cuts=cuts,dialogue=semantic if (archive or film_path.exists()) else None)

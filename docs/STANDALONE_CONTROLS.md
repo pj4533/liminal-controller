@@ -10,9 +10,9 @@
   only future automatic onsets and leaves sounding notes and the
   common take clock evolving; manually held onsets keep their original source.
 - Mix112: encoders71–76 change six corresponding channel levels. Device110 or
-  Note50: the full display shows eight selected-channel effects on Sound, Space
+  Note50: the full display shows eight selected-channel effects on Effects, Sound, Space
   or Motion. Lower7/8 (CC26/27) move previous/next; each channel remembers its
-  page, initially Sound. Encoders71–78 edit that page. Chops/Film additionally
+  page, initially Effects. Encoders71–78 edit that page. Chops/Film additionally
   have Cuts: encoders76–78 retain Start/Length/Pad. Volume79 changes master.
   See [channel effects](CHANNEL_FX.md) for all24parameters, ranges and DSP.
 - Melodic pads36–99: exact Stillwater default centered D Dorian grid,
@@ -64,7 +64,8 @@ Live archive audio (standalone-native live sourcing update):
 - Film pads still audition the prepared anchor (up to8seconds). Film view exposes
   the same chop editors; use Chops pads to audition those edits. Delete releases
   manual voices; Stop hushes everything. Source changes still happen at16bars,
-  so press Play to advance a newly queued source when transport is stopped.
+  while playing. While stopped, a prepared request publishes after sounding
+  voices finish; held pads defer it until release.
 
 Local whisper.cpp transcription and deterministic word/line interest run on
 the preparation worker; no cloud inference. SPEECH ANALYZING/TEXT READY or
@@ -75,8 +76,8 @@ can fail or take minutes; the active source continues playing. Three decoded
 windows are cached on disk; the latest valid window is restored after reboot.
 The original bundled film remains the immediate offline boot fallback.
 
-Drums start dry (Echo0, Room0); their original take remains intact. Echo and
-Room can still be added deliberately. Each chop has bounded foreground gain
+Drums start dry (Echo0, Reverb0); their original take remains intact. Echo and
+Reverb can still be added deliberately. Each chop has bounded foreground gain
 (target .11 source RMS, peak ceiling .6, maximum16x gain), shared by Auto and
 Manual. Film remains the quiet full source at .16 gain. Both use the same film
 recording; chopping does not isolate speech from its original soundtrack.

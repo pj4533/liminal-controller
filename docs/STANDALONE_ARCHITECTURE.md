@@ -122,3 +122,12 @@ Successful native automatic onsets publish atomic channel/revision/pad feedback;
 voice rejection and manual onsets cannot create a flash. Expiry uses the audio
 sample clock, bounded to120ms or shorter gate/source duration. Stop/mute/Manual
 clear it. No schedule scanning or wall-clock estimation drives the red pads.
+
+
+Stopped publication correction: playing retains the64-beat bank boundary.
+An explicitly requested preparation (initial text, source/drum request or edit)
+may publish while stopped only after every native voice and admitted onset pin
+is clear. A held pad defers it through release. Ordinary next-take prefetch stays
+queued; stopping cannot spin through revisions. An initial unaligned bank is an
+honest manual-only fallback. Read CHOP_REGRESSION_GATE.md (under docs/) for the
+mandatory actual-source acceptance; one unique whole line is insufficient.

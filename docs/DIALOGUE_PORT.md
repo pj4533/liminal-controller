@@ -100,3 +100,12 @@ on ARM validates honest unavailable-worker retention. Actual archival DTW/PCM
 replay validates semantic cuts and native scoring separately. Neither replaces
 concurrent device inference/audio/USB qualification, physical listening or human
 acceptance. ABI2 source/native/model/tools/licenses must be staged coherently.
+
+
+Stopped publication correction: playing retains the64-beat bank boundary.
+An explicitly requested preparation (initial text, source/drum request or edit)
+may publish while stopped only after every native voice and admitted onset pin
+is clear. A held pad defers it through release. Ordinary next-take prefetch stays
+queued; stopping cannot spin through revisions. An initial unaligned bank is an
+honest manual-only fallback. Read CHOP_REGRESSION_GATE.md (under docs/) for the
+mandatory actual-source acceptance; one unique whole line is insufficient.

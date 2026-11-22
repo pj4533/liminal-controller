@@ -13,7 +13,7 @@ class ChopGateTests(unittest.TestCase):
     def setUp(self):
         self.engine=Sampler(ROOT/'.build/engine.so')
         self.slot=self.engine.install(self.bank());self.engine.render(1)
-        ui=Instrument.__new__(Instrument);ui.fx_pages=[0,0,0,0,3,3];ui.effects=[defaults(ch) for ch in range(6)];ui.engine=self.engine;ui.last_bank=self.slot
+        ui=Instrument.__new__(Instrument);ui.fx_pages=[0,0,0,0,4,4];ui.effects=[defaults(ch) for ch in range(6)];ui.engine=self.engine;ui.last_bank=self.slot
         ui.settings=False;ui.shift=False;ui.held={};ui.identity=0;ui.selected=4
         ui.archive=None;ui.manual=[False]*6;ui.manual[4]=True;ui.chop=0;ui.edits={};ui.edit_gains={};ui.mix=False
         self.ui=ui;self.engine.command(3,4,1)

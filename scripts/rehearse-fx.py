@@ -53,7 +53,14 @@ with tempfile.TemporaryDirectory() as home:
                             edits={3:7,4:.25 if ch==0 else 3,5:.3,8:.23,10:.42,12:.20,13:1.8,16:0 if ch==1 else .22,19:.28,20:.18,23:.25}
                             for param,value in edits.items():values[param]=value
                         for descriptor in parameters(ch):engine.command(16,ch,descriptor.id,event=Event(gain=values[descriptor.id]))
-                    engine.render(6000);engine.command(1);pcm=list(engine.render(SR*12));metrics[name+' '+label]=stats(pcm)
+                    engine.render(6000)
+                    if ch==4 and not bank.get('dialogue'):
+                        # Unaligned fallback is manual-only; audition its actual
+                        # source range rather than inventing an Auto event.
+                        slot=engine.status()['bank'];start,length=bank['cuts'][0]
+                        engine.command(7,slot,bank['revision'],1,Event(frame=start,channel=4,sample=192+slot*16+1,gate=length,speed=1,gain=bank['chop_gains'][0],attack=128,release=256))
+                    else:engine.command(1)
+                    pcm=list(engine.render(SR*12));metrics[name+' '+label]=stats(pcm)
                     if metrics[name+' '+label]['rms']<=1e-6:raise AssertionError('inaudible comparison '+name+' '+label)
                     captures.append((label,pcm))
                 finally:engine.close()
@@ -62,7 +69,7 @@ with tempfile.TemporaryDirectory() as home:
                 metrics[name+' default delta']=dict(rms_db=20*math.log10((stats(new)['rms']+1e-20)/(stats(old)['rms']+1e-20)),difference_rms=math.sqrt(sum((x-y)**2 for x,y in zip(old,new))/len(old)))
             # Three two-second excerpts in documented order; no normalization.
             excerpt=array.array('h')
-            start=max(SR, min(e['frame'] for e in bank['events'] if e['channel']==ch)+SR//5)
+            start=max(SR, min((e['frame'] for e in bank['events'] if e['channel']==ch),default=0)+SR//5)
             for label,pcm in captures:excerpt.extend(round(max(-1,min(1,x))*32767) for x in pcm[start*2:(start+SR*2)*2])
             with wave.open(str(a.out/(name.lower()+'-comparison.wav')),'wb') as w:w.setparams((2,2,SR,0,'NONE','uncompressed'));w.writeframes(excerpt.tobytes())
         metrics['excerpt_order']='old default (if supplied), new default, expressive; 2 seconds each from first channel onset +200ms (minimum1s), unchanged master/levels'

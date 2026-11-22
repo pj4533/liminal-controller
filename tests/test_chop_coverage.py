@@ -90,7 +90,7 @@ class CoverageTests(unittest.TestCase):
         finally:engine.close()
 
     def ui(self,engine):
-        ui=Instrument.__new__(Instrument);ui.fx_pages=[0,0,0,0,3,3];ui.effects=[defaults(ch) for ch in range(6)];ui.engine=engine;ui.last_bank=engine.status()['bank'];ui.settings=False;ui.shift=False;ui.held={};ui.identity=0;ui.selected=4;ui.manual=[True]*6;ui.chop=0;ui.edits={};ui.edit_gains={};ui.mix=False;ui.archive=None;ui.archive_dirty=False;ui.error='';ui.next_slot=None;ui.pending=None
+        ui=Instrument.__new__(Instrument);ui.fx_pages=[0,0,0,0,4,4];ui.effects=[defaults(ch) for ch in range(6)];ui.engine=engine;ui.last_bank=engine.status()['bank'];ui.settings=False;ui.shift=False;ui.held={};ui.identity=0;ui.selected=4;ui.manual=[True]*6;ui.chop=0;ui.edits={};ui.edit_gains={};ui.mix=False;ui.archive=None;ui.archive_dirty=False;ui.error='';ui.next_slot=None;ui.pending=None
         return ui
     def bank(self,revision=0,seconds=2,length=128):
         pcm=array.array('f',[.1,-.1])*(SR*seconds);cuts=chops(pcm)

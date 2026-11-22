@@ -3,7 +3,7 @@
 Device110 / Note50 uses the whole960x160 display for the selected channel.
 Eight120pixel columns align with encoders71–78. Top102–107 / wheel70 select
 Drums, Bass, Lead, Mids, Chops, Film; lower7/8 (CC26/27) move to the previous/next
-FX page. Each channel remembers its page; the initial page is Sound, including
+FX page. Each channel remembers its page; the initial page is Effects, including
 Chops and Film. Mix112 retains six level strips. Selection/page changes send no
 audio commands. Pads remain playable on every page and in overlays; releases
 are routed before all view logic. Settings takes priority over page buttons:
@@ -11,8 +11,9 @@ lower7 cancels, lower8 confirms its deliberate recovery target.
 
 | Page | Encoders1–8 |
 |---|---|
+| Effects (initial) | Level, Low Cut, High Cut, Echo, Echo Time, Feedback, Reverb, Decay |
 | Sound | Level, Low Cut, High Cut, Drive, character, Compress/Glue, Width, Pan |
-| Space | Echo Mix, Division, Feedback, Echo Tone, Room Mix, Decay, Damping, Predelay |
+| Space | Echo Mix, Division, Feedback, Echo Tone, Reverb, Decay, Damping, Predelay |
 | Motion | Chorus, Rate, Depth, Wow, Flutter, Tremolo, Trem Div, Crush |
 | Cuts (Chops/Film) | first5 explanatory/inert;6 Start,7 Length,8 Pad |
 
@@ -53,7 +54,7 @@ All Auto and Manual voices sum into their channel bus before these processors:
  64beat bank duration; right time is1.125x left. Times clamp below the allocated
  3second buffer limit. Division changes crossfade between old/new taps over30ms;
   rapid changes finish that transition before admitting the latest requested time.
-- Room is a separate send: four parallel damped feedback combs, then two
+- Reverb (formerly Room) is a separate send: four parallel damped feedback combs, then two
   allpasses per stereo side, mix0–35%, decay.2–4s (feedback-derived nominal RT60),
   damping1.5–12kHz, predelay0–60ms. It does not read or feed the echo buffer.
 - Chorus uses a stereo phase-offset triangle LFO with an interpolated10ms delay,

@@ -73,7 +73,7 @@ def render(ui,status,background):
         c.rect(0,30,960,14,DARK);c.text(8,33,fit('SOURCE: '+source,610),BRASS)
         c.text(640,33,'TOP/WHEEL: CHANNEL  LOWER 7/8: FX PAGE',MIST)
         values=[]
-        if page<3:
+        if page<4:
             for p in page_parameters(ch,page):
                 value=ui.level[ch] if p.id==0 else ui.effects[ch][p.id]
                 values.append((p.label,p.display(value),(value-p.low)/(p.high-p.low)))
@@ -95,7 +95,7 @@ def render(ui,status,background):
     c.text(8,137,('PLAYING' if status['playing'] else 'STOPPED')+'  %d BPM  BAR %02d/16  '%(bank['bpm'],bar)+ready,MIST)
     c.text(600,137,'REPEAT: NEW TAKE/IA  STOP: HUSH',BRASS)
     speech=getattr(ui,'speech',None)
-    speech_status=('SPEECH '+speech.state+' '+speech.error) if speech else ''
+    speech_status=('ACTIVE %d CUTS %s / SPEECH '%(len(bank['cuts']),bank['dialogue'].get('quality','TEXT') if bank.get('dialogue') else 'MANUAL FALLBACK')+speech.state+' '+speech.error) if speech else ''
     c.text(8,150,fit(ui.error or speech_status or archive or 'ARROWS: OCTAVE/DRUM PAGE  DELETE: RELEASE  MIX: OVERVIEW  HELP: CONTROLS',944))
     if ui.settings:
         c.rect(0,28,960,132,DARK);c.text(12,40,'RECOVERY - SAVE AND STOP FIRST',INK,2)
@@ -104,7 +104,7 @@ def render(ui,status,background):
         c.text(12,130,'LOWER 8 CONFIRM / LOWER 7 CANCEL - PRESERVES EXISTING MUSIC')
     elif ui.help:
         c.rect(0,28,960,132,DARK);c.text(12,35,'LIMINAL / CHANNEL EFFECTS',INK,2)
-        c.text(12,57,'DEVICE/NOTE: SELECTED CHANNEL. KNOBS 1-8: SOUND / SPACE / MOTION. LOWER 7/8: PREV/NEXT.',MIST)
+        c.text(12,57,'DEVICE/NOTE: SELECTED CHANNEL. KNOBS 1-8: EFFECTS / SOUND / SPACE / MOTION. LOWER 7/8: PREV/NEXT.',MIST)
         c.text(12,72,'TOP 1-6 OR WHEEL: CHANNEL. MIX: LEVELS. SHIFT+LOWER 1-6: AUTO/MANUAL. PADS ALWAYS PLAY.')
         c.text(12,87,'CHOPS/FILM CUTS PAGE: KNOB 6 START / 7 LENGTH / 8 PAD. 50MS STEPS; SHIFT: 5MS.')
         c.text(12,102,'CHOPS: HOLD LIT PADS IN SOURCE ORDER. SHIFT+PAD: SELECT. FILM: ANCHOR ONE-SHOT.')

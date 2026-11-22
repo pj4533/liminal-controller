@@ -31,7 +31,7 @@ with tempfile.TemporaryDirectory() as home:
     try:
         current=ui.current;check('boot stopped silent',not engine.status()['playing'] and max(map(abs,engine.render(512)))==0)
         check('64 beat working length',current['length']==round(64*44100*60/69))
-        check('all six channels scheduled',set(e['channel'] for e in current['events'])==set(range(6)))
+        check('honest manual-only Chops fallback; five Auto channels scheduled',set(e['channel'] for e in current['events'])==set(range(6))-{4})
         check('programme stable over all four phrases',len({p[0] for p in current['programs']})==1)
         repeat=prepare(ui.instruments,a.assets,ui.catalog,0,current['drum'],line_index=current['line_index'])
         check('deterministic source-derived score',repeat['events']==current['events'])
@@ -41,10 +41,11 @@ with tempfile.TemporaryDirectory() as home:
             programmes.append(prepared['programs'][0]);check('programme stable 64 beats revision '+str(revision),len(set(p[0] for p in prepared['programs']))==1)
         check('piano returns after pluck/guitar takes',programmes[0]==programmes[3] and programmes[0]!=programmes[1] and programmes[1]!=programmes[2])
         for ch in range(6):
+            if ch==4:continue # No fabricated Auto speech before text is ready.
             for other in range(6):ui.event(dict(kind='cc',number=102+other,value=127));ui.send(5,other,int(other!=ch))
             ui.send(2);engine.render(4096);ui.send(1)
             pcm=engine.render(SR*12)
-            rms=math.sqrt(sum(x*x for x in pcm)/len(pcm));metrics['auto_rms_'+str(ch)]=rms;check('actual PCM auto channel '+str(ch),rms>1e-6)
+            rms=math.sqrt(sum(x*x for x in pcm)/len(pcm));metrics['auto_rms_'+str(ch)]=rms;check('actual PCM auto channel '+str(ch),rms>1e-6 if ch!=4 else rms==0)
         ui.send(2);engine.render(4096)
         for other in range(6):ui.send(5,other,0)
         for ch in range(6):
@@ -57,7 +58,7 @@ with tempfile.TemporaryDirectory() as home:
         ui.event(dict(kind='cc',number=79,value=1));check('master mapping',abs(ui.master-.46)<1e-6)
         ui.event(dict(kind='cc',number=112,value=127));ui.event(dict(kind='cc',number=72,value=1));check('mix channel mapping',abs(ui.level[1]-.66)<1e-6)
         ui.event(dict(kind='cc',number=110,value=127));ui.selected=2
-        for page in range(3):
+        for page in range(4):
             ui.fx_pages[2]=page
             for knob,p in enumerate(page_parameters(2,page)):
                 before=ui.effects[2][p.id];ui.event(dict(kind='cc',number=71+knob,value=127))
