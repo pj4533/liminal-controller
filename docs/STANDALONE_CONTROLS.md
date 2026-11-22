@@ -23,12 +23,14 @@
   cut the current full take. Drums Manual pads repeat four fixed PCM cuts across
   all64pads (pad index modulo4), with release. These are source slices, not
   promised kick/snare labels or complete-loop latches.
-- Chops Manual: up to64 consecutive one-shots walk through the complete available
+- Chops Manual: up to64 consecutive held cuts walk through the complete available
   phrase in source order, left to right then up the grid. Each cut appears once;
   only populated pads light and unused pads do nothing.
+  Hold a pad to play its cut once to the end; releasing it stops that cut with
+  the native256-frame (5.8ms) click-free release. It never loops while held.
   Film Manual: each pad triggers the current complete8second anchor line.
   They launch immediately, without forced sixteenth quantization. Pad release
-  leaves these one-shots sounding; Delete118 releases all manual voices.
+  leaves the Film anchor sounding; Delete118 releases all manual voices.
 - Help81 opens controls/collection credit; press again to close. The asset JSON
   manifests retain full individual work, film, source URL and license credits.
 - Settings30 opens recovery. Lower1 selects Stillwater,2 Stock,3 old Controller;

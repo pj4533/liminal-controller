@@ -22,8 +22,12 @@ changes do not retrigger drum takes. Missing next preparation repeats the
 current take and says PREPARING/REPEATING CURRENT. A replacement drum choice is
 prepared off-thread and replaces the queued next bank; it cannot splice an
 already sounding full take. Manual drums play four deterministic cuts of the
-current take. Manual chops are immediate unquantized one-shots from the exact
-prepared PCM; pressure does not mutate/reverse/randomize them.
+current take. Manual chops are immediate unquantized held cuts from the exact
+prepared PCM. Each cut ends once at its slice boundary or earlier on its owning
+pad release, through the existing256-frame click-free native release. Note-off
+and velocity-zero note-on address the onset token across edits, mode/selection
+and source changes; other pads retain their own voices. Film anchors remain
+one-shots. Pressure does not mutate/reverse/randomize them.
 
 The source-derived composition retains LofiScore motif onset tables/contours,
 answer figures, section order and return emphasis; LofiPreset acoustic rows,

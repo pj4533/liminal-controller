@@ -72,7 +72,7 @@ class Instrument:
         self.send(3,ch,int(not self.manual[ch]));self.manual[ch]=not self.manual[ch]
     def event(self,e):
         kind=e['kind'];number=e['number'];value=e['value']
-        if kind=='note_off':
+        if kind=='note_off' or (kind=='note' and value==0):
             identity=self.held.pop(number,None)
             if identity:self.send(8,identity=identity)
             return
@@ -100,13 +100,14 @@ class Instrument:
                 else:
                     if len(bank['pcm'])<10:return
                     local=bank['anchor'];gain=.25
-                # Film/chops are immediate one-shots. Release does not truncate them.
+                # Chops end at their slice boundary or owning pad release;
+                # Film remains a full-anchor one-shot.
                 frames=len(bank['pcm'][local])//2;offset=0
                 if ch==4:
                     offset,frames=self.cut(bank,pad);local=1
                 event=Event(frame=offset,channel=ch,sample=192+slot*16+local,gate=frames,speed=1,gain=gain*value/127,attack=128,release=256)
                 if not self.onset(slot,bank['revision'],identity,event):return
-                if ch==0:self.held[number]=identity
+                if ch in (0,4):self.held[number]=identity
             else:
                 midi=pad_pitch(number,self.octave)
                 program=bank['bass'] if ch==1 else (bank['pad'] if ch==3 else bank['programs'][0])
