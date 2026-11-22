@@ -1,8 +1,8 @@
 # Standalone validation
 
-Latest accepted live runtime: **87c8637add926fb52551e0b5f0d0b752e5e101c7**,
-selected-channel FX,2026-11-22. Its device acceptance appears at the end; earlier
-sections retain the historical evidence for each preceding rollout.
+Latest accepted live runtime: **c92fb2f60fdf29d73ca1a554b2a619a575e6071e**,
+text-aware chops and playable Auto,2026-11-22. Its device acceptance appears at
+the end; earlier sections retain historical evidence for preceding rollouts.
 
 Playability correction (2026-11-21), implemented and deployed:
 strict native host and Zig0.13 x86_64 builds pass; host113tests pass, including
@@ -456,3 +456,72 @@ Strict host and x86 builds passed. Unit suite:183passed,0failed. Fresh private
 library rehearsal:257passed,0failed. Actual device DTW transcript plus matching
 archival PCM replay:52passed across8revisions. New960x160Sound/Cuts/Help renders
 were inspected. This correction makes no hardware verification or listening claim.
+
+
+## Text-aware chops: accepted device deployment, 2026-11-22
+
+Live source **c92fb2f60fdf29d73ca1a554b2a619a575e6071e**, ABI2; all295
+manifest files were checked during installation and independently rehashed after
+acceptance. Manifest SHA256:
+`1ff52c7d5dd635c6c61b0ec8c5fd9ea518359b5bf4a004dbc320db286902f842`.
+Paired x86_64 native engine SHA256:
+`3a942058fb863a577aa9bbce2b549aa8831c68b6f4dac58d052b59bdf801ee4a`.
+The hash-verified whisper.cpp/base.en/POS artifacts and their licenses shipped in
+the same transaction. Source extraction remains upstream Liminal10f5e1d.
+
+All183device tests passed in12.357seconds, including exact physical MIDI Slicing
+mapping/unused dark pads, actual native slice feedback, complete protected source
+ranges and cumulative multi-pad edits. Prior host evidence remains183unit tests,
+257private-library rehearsal checks and52actual transcript/PCM replay checks
+across8revisions. No replay result substitutes for the hardware checks below.
+
+Actual x86 memory benchmark used64voices and4000blocks per phase, with a
+5.804989ms render deadline:
+
+| Phase | p99 | p99 headroom | Deadline misses |
+| --- | ---: | ---: | ---: |
+| All effects | .748625ms | 87.10% | 0 |
+| Rapid parameters | .774836ms | 86.65% | 0 |
+| Effects returned to zero | .575667ms | 90.08% | 0 |
+
+Stop clear took.665663ms; stopped voices/peak/overflow were zero. The exclusive
+master-zero qualifier then opened actual ALSA, MIDI and USB, exercised held
+releases/mode/page changes, six-channel64voice effects stress and Stop tails.
+Auto Chops showed one native voice, manual overlap two, then one after the
+onset-owned manual release across selection/mode change. Actual native red
+feedback and its clearing passed. It produced775display transfers and428MIDI
+feedback writes, with xruns0→0 and stopped voices/peak/overflow zero.
+
+Fresh uncached local base.en inference analyzed30seconds on one thread in
+11.606135seconds while ALSA/USB ran. It reached TEXT READY and prepared a real,
+unique, bounded semantic next bank. Conservative name protection legitimately
+produced one whole-line cut in this fixture; the qualifier used two synthetic
+ranges separately for overlap ownership tests. It did not claim eight semantic
+cuts for every source or actual publication of this prepared bank while stopped.
+Sampled inference CPU was11.18seconds over11.177seconds observed (about one core),
+with389,892KiB kernel RSS high-water mark. The qualifier process peaked at
+261,200KiB; normal application at280,596KiB during sampled startup/health.
+These are250ms process samples, not complete process-lifetime accounting.
+
+Normal service passed60.3338seconds ready and stopped with stable PID19097 as
+sole USB/MIDI/PCM owner. Audio frames15,105→2,672,897, written14,924→2,672,868 and
+display2→597; xruns0→0, voices/peak/overflow zero, runtime/speech/image/archive
+errors empty. SPEECH moved PENDING→TEXT READY and NEXT READY became true.
+An independent final verification confirmed the same live identity and hashes.
+
+The first transaction safely rolled back because the private qualifier compared
+a pre-render status snapshot after a synchronous display render exhausted its
+short observation interval. A deterministic fixture reproduced stale voices0
+versus actual1; sampling fresh native status after rendering fixed the private
+qualifier. The original failed receipt/checkpoint remains intact. A separately
+hashed retry package deployed the identical application/source/native bytes and
+passed every gate; no application change or weakened assertion was used.
+
+All104recordings totaling16,887,273,274bytes retained path/size/mtime/inode,
+all seven session hashes matched, and primary init, boot selector and recovery
+preservation assertions passed. Both checkpoints and detailed operational
+receipts remain private. No reboot, firmware/OS/init/boot modification, public
+listener or Drift runtime update occurred. This establishes silent hardware IO
+and synthetic-control acceptance; physical pad presses, visible colours, hearing,
+subjective timing/feel and acoustic balance remain human checks. Later docs-only
+commits do not change the deployed runtime identifier or require redeployment.

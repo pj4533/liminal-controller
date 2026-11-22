@@ -6,14 +6,14 @@ slowly crossfading collection images behind readable controls. No Mac instance,
 controller connection, AI music/image service or network listener is needed.
 Boot starts stopped; Play toggles the local arrangement.
 
-**Status:** live Push runtime **87c8637add926fb52551e0b5f0d0b752e5e101c7**.
-Live Internet Archive newsreel sourcing, background decoding, boundary publication
-and editable manual chops pass actual silent device qualification. Play toggles
-play/stop, melodic pads use Stillwater defaults, drums start dry, and chops have
-bounded foreground gain. Selected-channel Sound/Space/Motion effects pass actual
-x86 and silent ALSA/USB qualification. All149device tests and257private-library rehearsal
-checks pass. Existing recordings/sessions
-are preserved. Physical listening and pad feel remain human checks; see
+**Status:** live Push runtime **c92fb2f60fdf29d73ca1a554b2a619a575e6071e**.
+Offline text-aware chops, unique Ableton Slicing pads and actual native Auto
+feedback pass silent device qualification alongside manual playing. Fresh local
+base.en inference completed while ALSA/USB continued with zero xruns. All183
+device tests and257private-library rehearsal checks pass;295paired runtime files
+are hash verified. Recordings/sessions and recovery remain preserved. The normal
+service passed60seconds healthy and stopped. Physical listening, visible pad
+colours and pad feel remain human checks; see
 [validation](docs/STANDALONE_VALIDATION.md).
 
 Press Play to start or stop. Select a channel with the six top buttons; play pads in either mode; hold Shift and
@@ -22,7 +22,7 @@ levels on the first six encoders; the Volume encoder adjusts master. For Drums,
 Shift+pads choose a take, arrows switch catalog pages, and Repeat requests
 another compatible take. Changes arrive at the next 16-bar boundary.
 
-The candidate adds source-derived rhythmic chops and automatic red pad feedback;
+The runtime includes source-derived rhythmic chops and automatic red pad feedback;
 see [portable dialogue policy](docs/DIALOGUE_PORT.md) for scope and validation.
 
 With Chops selected, Repeat fetches fresh archive material directly on Push.
