@@ -1,8 +1,8 @@
 # Standalone validation
 
-Latest accepted live runtime: **77b149e4d1dbbafaf10d81458e923d5ce5c54763**,
-real multi-cut Chops and prominent Echo/Reverb,2026-11-22. Acceptance is at the
-end. Earlier c92fb2f plumbing checks missed the subsequently reproduced one-pad
+Latest accepted live runtime: **011e676110d888ca08f9716426a16b79d37aeb67**,
+FX control-channel repair with real multi-cut Chops retained,2026-11-22.
+Acceptance is at the end. Earlier c92fb2f plumbing checks missed the subsequently reproduced one-pad
 defect and do not establish usable chopping; see CHOP_REGRESSION_GATE.md.
 
 Playability correction (2026-11-21), implemented and deployed:
@@ -652,3 +652,70 @@ native PCM with member expression before/during/after two different cuts. The
 seven-case real-source gate passed again:40exact intended-range captures with
 natural ends and408unused pads dark/inert. These are host memory-render checks,
 not new device or physical acceptance.
+
+
+## FX control-channel device acceptance — 2026-11-22
+
+Installed runtime **011e676110d888ca08f9716426a16b79d37aeb67**, ABI2.
+All295runtime file hashes independently verified. Manifest SHA256:
+`a304ca9dce3c41a40664f738e928c0b4cb726c82245bba43147686a0290c0870`.
+Native engine SHA256 remains
+`a6043199e992b3449076a6ec1c4ca6e4ba2e81262da92fd10b33007af04a3f61`.
+Only standalone.py and the manifest changed in the runtime; tools, models,
+licenses and native DSP stayed byte-identical. The reviewed transaction passed
+on its first execution, with graceful shutdown, zero surviving hardware owners,
+a private stopped checkpoint and source/native/model hash verification.
+
+Actual device Python3.10 passed202tests in14.722seconds, including all-channel
+note-off/velocity-zero ownership across selection, mode and bank changes.
+The seven-case real-source gate passed again with GuideDog4/8/8/8cuts and
+Chevrolet3/3/6cuts:40actual native captures matched their intended ranges and
+ended naturally, while408unused pads remained dark/inert. The separate actual
+x86 GuideDog revision10 native memory oracle retained rendered Echo30% and
+byte-identical PCM with member CC74 before/during/after two different cuts.
+No fabricated replacement cuts were used. Host private-library rehearsal
+separately passed264checks.
+
+Actual x86 benchmark,64voices and4000blocks per phase:
+
+| Phase | p99 | p99 headroom | Deadline misses |
+| --- | ---: | ---: | ---: |
+| All effects | .713714ms | 87.71% | 0 |
+| Rapid parameters | .741853ms | 87.22% | 0 |
+| Effects returned to zero | .527161ms | 90.92% | 0 |
+
+Stop clear took.640871ms. These memory-render timings are separate from the
+actual ALSA measurements below.
+
+The exclusive actual ALSA/USB qualifier kept master zero. Fresh30second local
+inference completed in11.514744seconds on one thread, cache_hit=false, and
+became a usable CURRENT bank. The exact failing GuideDog source became CURRENT
+at revision10 with8real cuts on notes36–39/44–47. Production-parser injections
+on member channels1/2 sent CC74 values64/32,127 and0 before/during/after distinct
+notes; Echo stayed30% at every step. A control-channel0 encoder increment
+then changed it to31%. Held publication3→10, release across selection,
+Auto/Manual voices1→2→1, native red feedback and clearing, all six real channel
+sources through Echo/Reverb, and Stop passed. USB transferred251frames and
+469MIDI writes; xruns0→0, final voices/peak/overflow zero.
+
+The sole MIDI owner's bounded tap captured22real0xFE active-sensing packets
+and no physical pad, knob or expression gestures. The preceding control tests
+are explicitly protocol injection, not a captured hand-played sequence. Native
+memory PCM/display assertions, actual silent hardware progress, and physical
+listening/feel are distinct evidence. No physical listening or screen-colour
+acceptance is claimed.
+
+Normal service then remained ready, stopped and exclusively owned for60.371924s,
+with useful CURRENT TEXT throughout. Audio frames703,489→3,364,609, written
+703,410→3,364,527 and display155→748; xruns0→0, no error/overflow/voices/peak.
+The independent final snapshot held8active TEXT cuts. Background source refresh
+continues, so this snapshot does not promise every source yields8cuts.
+
+All104recordings totaling16,887,273,274bytes retained path/size/mtime/inode;
+all7session hashes and init/recovery/boot-selection preservation checks passed.
+The private checkpoint retains the previous77b149e paired runtime/manifest and
+mutable runtime state for rollback. No OS/firmware/init/boot change, reboot,
+listener or Drift update was performed. Startup defaults remain the policy:
+FX edits persist until changed, including content changes, and app restart
+restores defaults. No automatic boundary reset or new reset gesture was added.
+Later documentation-only commits do not change this installed runtime identity.
