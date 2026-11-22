@@ -5,6 +5,7 @@ from pathlib import Path
 import random
 from composition import Instruments,prepare,choose_drum,chop_gain,SR
 from sampler import Event
+from channel_fx import defaults,parameters,pages,page_parameters
 from dialogue_ledger import DialogueLedger
 NAMES=('DRUMS','BASS','LEAD','MIDS','CHOPS','FILM')
 # Stillwater's default centered D Dorian grid and Silt hardware palette.
@@ -20,7 +21,7 @@ class Instrument:
         self.ledger=DialogueLedger(Path(home or assets)/'dialogue-lines.json',film.get('sha256','no-film'))
         self.instruments=Instruments(self.assets/'instruments',engine)
         self.settings=False;self.recovery_target=None;self.recovery_request=None;self.help=False;self.selected=0;self.shift=False;self.mix=False;self.manual=[False]*6;self.muted=[False]*6
-        self.level=[.65]*6;self.effects=[[.55,0,0,0]]+[[.55,.12,.10,0] for _ in range(5)];self.master=.45;self.octave=0
+        self.level=[.65]*6;self.effects=[defaults(ch) for ch in range(6)];self.fx_pages=[0]*6;self.master=.45;self.octave=0
         self.held={};self.identity=0;self.next_revision=1;self.error='';self.pending=None;self.last_bank=-1;self.next_slot=None;self.queued_drum=None;self.drum_page=0
         self.archive_worker=archive_worker;self.archive=None;self.archive_dirty=False;self.chop=0;self.edits={};self.edit_gains={};self.archive_started=0
         self.pool=concurrent.futures.ThreadPoolExecutor(max_workers=1,thread_name_prefix='prepare')
@@ -28,7 +29,7 @@ class Instrument:
         bank=prepare(self.instruments,self.assets,self.catalog,0,first,line_index=self.ledger.choose())
         self.engine.install(bank);self.engine.render(1);self.last_bank=self.engine.status()['bank']
         for ch in range(6):
-            for i,op in enumerate((11,12,13,14)):self.engine.command(op,ch,event=Event(gain=self.effects[ch][i]))
+            for p in parameters(ch):self.engine.command(16,ch,p.id,event=Event(gain=self.effects[ch][p.id]))
         self.request_next()
     def request_next(self,index=None,refresh=False):
         if index is not None:self.queued_drum=index
@@ -122,7 +123,7 @@ class Instrument:
             if number==79:
                 self.master=min(1,max(0,self.master+delta*.01));self.send(10,event=Event(gain=self.master));return
             knob=number-71;ch=self.selected
-            if not self.mix and ch in (4,5) and knob in (5,6,7):
+            if not self.mix and self.fx_pages[ch]==3 and ch in (4,5) and knob in (5,6,7):
                 count=len(self.current['cuts'])
                 if not count:return
                 self.chop=min(self.chop,count-1)
@@ -142,10 +143,12 @@ class Instrument:
                         self.archive=dict(self.archive,cuts=list(self.archive['cuts']));self.archive['cuts'][self.chop]=(start,length);self.archive_dirty=True
                 return
             if self.mix:
-                if knob<6:self.level[knob]=min(1,max(0,self.level[knob]+delta*.01));self.send(4,knob,event=Event(gain=self.level[knob]))
-            elif knob==0:self.level[ch]=min(1,max(0,self.level[ch]+delta*.01));self.send(4,ch,event=Event(gain=self.level[ch]))
-            elif knob in (1,2,3,4):
-                i=knob-1;lo=-1 if i==3 else 0;hi=(1,.6,.5,1)[i];self.effects[ch][i]=min(hi,max(lo,self.effects[ch][i]+delta*.01));self.send((11,12,13,14)[i],ch,event=Event(gain=self.effects[ch][i]))
+                if knob<6:self.level[knob]=min(1,max(0,self.level[knob]+delta*.01));self.effects[knob][0]=self.level[knob];self.send(4,knob,event=Event(gain=self.level[knob]))
+            elif self.fx_pages[ch]<3:
+                p=page_parameters(ch,self.fx_pages[ch])[knob]
+                self.effects[ch][p.id]=p.edit(self.effects[ch][p.id],delta)
+                if p.id==0:self.level[ch]=self.effects[ch][0]
+                self.send(16,ch,p.id,event=Event(gain=self.effects[ch][p.id]))
             return
         if not value:return
         if number==30:self.settings=not self.settings;self.recovery_target=None;return
@@ -155,6 +158,8 @@ class Instrument:
             elif number==26:self.settings=False;self.recovery_target=None
             elif number==27 and self.recovery_target:self.send(2);self.recovery_request=self.recovery_target
             return
+        if number in (26,27) and not self.mix:
+            self.fx_pages[self.selected]=(self.fx_pages[self.selected]+(-1 if number==26 else 1))%len(pages(self.selected));return
         if 102<=number<=107:self.selected=number-102
         elif 20<=number<=25:
             ch=number-20

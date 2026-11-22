@@ -9,6 +9,7 @@ from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'src'))
 from archive_worker import ArchiveWorker,source_for,chops,SR,MAX_SOURCE
 from sampler import Sampler,Event
+from channel_fx import defaults
 from standalone import Instrument
 
 class ArchiveTests(unittest.TestCase):
@@ -70,7 +71,7 @@ class ArchiveTests(unittest.TestCase):
             self.assertEqual(max(map(abs,s.render(1000))),0)
         finally:s.close()
     def test_edit_controls_and_source_retention(self):
-        ui=Instrument.__new__(Instrument);ui.settings=False;ui.selected=4;ui.shift=False;ui.mix=False;ui.chop=0;ui.edits={};ui.edit_gains={};ui.archive=None
+        ui=Instrument.__new__(Instrument);ui.fx_pages=[0,0,0,0,3,3];ui.effects=[defaults(ch) for ch in range(6)];ui.settings=False;ui.selected=4;ui.shift=False;ui.mix=False;ui.chop=0;ui.edits={};ui.edit_gains={};ui.archive=None
         ui.engine=type('Engine',(),{'banks':{0:(None,dict(revision=1,chop_ceiling=6,archive_id='same',line_index=0,pcm=[[],array.array('f',[.1,.1])*SR*5],cuts=[(0,SR)]*8))}})();ui.last_bank=0
         ui.event(dict(kind='cc',number=76,value=1));self.assertEqual(ui.cut(ui.current,0),(round(SR*.05),SR))
         ui.shift=True;ui.event(dict(kind='cc',number=77,value=1));self.assertEqual(ui.cut(ui.current,0)[1],SR+round(SR*.005))

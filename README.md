@@ -23,10 +23,14 @@ another compatible take. Changes arrive at the next 16-bar boundary.
 
 With Chops selected, Repeat fetches fresh archive material directly on Push.
 Shift+lower5 enables Manual; lit pads play unique consecutive editable cuts across the full phrase while held.
-Release stops the cut; holding plays it to the end once, without looping. In Device view,
+Release stops the cut; holding plays it to the end once, without looping. On the Device/Note Cuts page (lower7/8),
 encoder6 sets start,7 length,8 selected cut; Shift gives finer editing. Fresh footage is requested at every take transition in Auto and Manual. New
 sources arrive at the next16-bar boundary. No computer is required; internet
 is needed for fresh sources, and failures retain local material.
+
+Device/Note fills the screen with eight effects for the selected channel.
+Lower7/8 changes Sound/Space/Motion pages; Chops/Film also have Cuts.
+See [all channel effects and controls](docs/CHANNEL_FX.md).
 
 Read [specification](docs/STANDALONE_SPEC.md),
 [architecture and limitations](docs/STANDALONE_ARCHITECTURE.md),

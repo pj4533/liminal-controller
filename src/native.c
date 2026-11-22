@@ -16,6 +16,7 @@
 #define NV 64
 #define NQ 1024
 #define NC 6
+#include "fx_dsp.h"
 /* Standalone sampler ABI1. All file IO and allocation happen before publication. */
 typedef struct { const float *pcm; int frames; } Sample;
 typedef struct { int frame,channel,sample,gate; float speed,gain,attack,release,frequency; } Event;
@@ -26,8 +27,8 @@ typedef struct {
  Sample samples[NS]; Bank banks[NB]; _Atomic int state[NB];
  Command queue[NQ]; _Atomic unsigned read,write; Voice voices[NV];
  int hush,current,next,position,event,playing,manual[NC],muted[NC];
- float level[NC],smooth[NC],tone[NC],echo[NC],room[NC],pan[NC],filter[NC][2], master,master_smooth;
- float delay[NC][SR*2]; int delaypos;
+ float level[NC],smooth[NC],tone[NC],master,master_smooth;
+ Fx fx[NC];
  _Atomic int shown_bank,shown_position,shown_playing,overflow,shown_voices;
  _Atomic unsigned long frames,written,xruns; _Atomic float peak;
  _Atomic int running; int started; pthread_t thread; void *alsa,*pcm;
@@ -39,7 +40,7 @@ typedef struct {
 void *lm_create(void){
  Engine *s=calloc(1,sizeof *s);if(!s)return NULL;
  s->current=s->next=-1;s->master=.45f;
- for(int i=0;i<NC;i++){s->level[i]=.65f;s->tone[i]=.55f;}
+ for(int i=0;i<NC;i++){s->level[i]=.65f;s->tone[i]=.55f;fx_init(&s->fx[i],i);s->fx[i].target[8]=s->fx[i].value[8]=0;s->fx[i].target[12]=s->fx[i].value[12]=0;}
  atomic_store(&s->shown_bank,-1);return s;
 }
 int lm_sample(Engine *s,int index,const float *pcm,int frames){
@@ -64,6 +65,8 @@ int lm_bank(Engine *s,int slot,const Bank *b){
  s->banks[slot]=*b;return 1;
 }
 int lm_command(Engine *s,const Command *c){
+ if(c->op==16&&(c->a<0||c->a>=NC||c->b<0||c->b>=NP||!isfinite(c->event.gain)))return -1;
+ if((c->op==4||c->op==10||(c->op>=11&&c->op<=14))&&!isfinite(c->event.gain))return -1;
  unsigned w=atomic_load(&s->write),r=atomic_load_explicit(&s->read,memory_order_acquire);
  if(w-r>=NQ){atomic_fetch_add(&s->overflow,1);return 0;}
  if(c->op==7){
@@ -88,9 +91,9 @@ static void commands(Engine *s){
   if(c.op==15)c.op=s->playing?2:1;
   switch(c.op){
    case 1:s->hush=0;if(s->current>=0)s->playing=1;break;
-   case 2:s->hush=1323;s->playing=0;s->position=s->event=0;for(int i=0;i<NV;i++){release(&s->voices[i]);if(s->voices[i].left>1323)s->voices[i].left=1323;}memset(s->delay,0,sizeof s->delay);break;
+   case 2:s->hush=1323;s->playing=0;s->position=s->event=0;for(int i=0;i<NV;i++){release(&s->voices[i]);if(s->voices[i].left>1323)s->voices[i].left=1323;}for(int ch=0;ch<NC;ch++)fx_clear(&s->fx[ch]);break;
    case 3:if(ch>=0&&ch<NC){s->manual[ch]=c.b;for(int i=0;i<NV;i++)if(s->voices[i].e.channel==ch&&s->voices[i].id==0)release(&s->voices[i]);}break;
-   case 4:if(ch>=0&&ch<NC)s->level[ch]=fminf(1,fmaxf(0,c.event.gain));break;
+   case 4:if(ch>=0&&ch<NC)s->level[ch]=s->fx[ch].target[0]=fminf(1,fmaxf(0,c.event.gain));break;
    case 5:if(ch>=0&&ch<NC)s->muted[ch]=c.b;break;
    case 6:if(ch>=0&&ch<NB&&atomic_load(&s->state[ch])==1){atomic_store(&s->state[ch],2);if(s->current<0){s->current=ch;s->event=s->position=0;}else s->next=ch;}break;
    /* Admission validated current/revision and pinned the onset's source. A
@@ -100,9 +103,10 @@ static void commands(Engine *s){
    case 9:for(int i=0;i<NV;i++)if(s->voices[i].id)release(&s->voices[i]);break;
    case 10:s->master=fminf(1,fmaxf(0,c.event.gain));break;
    case 11:if(ch>=0&&ch<NC)s->tone[ch]=fminf(1,fmaxf(0,c.event.gain));break;
-   case 12:if(ch>=0&&ch<NC)s->echo[ch]=fminf(.6f,fmaxf(0,c.event.gain));break;
-   case 13:if(ch>=0&&ch<NC)s->room[ch]=fminf(.5f,fmaxf(0,c.event.gain));break;
-   case 14:if(ch>=0&&ch<NC)s->pan[ch]=fminf(1,fmaxf(-1,c.event.gain));break;
+   case 12:if(ch>=0&&ch<NC)s->fx[ch].target[8]=bound(c.event.gain,0,.4f);break;
+   case 13:if(ch>=0&&ch<NC)s->fx[ch].target[12]=bound(c.event.gain,0,.35f);break;
+   case 16:if(ch>=0&&ch<NC&&c.b>=0&&c.b<NP){float v=bound(c.event.gain,fx_specs[ch][c.b][0],fx_specs[ch][c.b][1]);s->fx[ch].target[c.b]=(c.b==9||c.b==22)?roundf(v):v;if(c.b==0)s->level[ch]=v;}break;
+   case 14:if(ch>=0&&ch<NC)s->fx[ch].target[7]=bound(c.event.gain,-1,1);break;
   }
  }
  atomic_store_explicit(&s->read,r,memory_order_release);
@@ -145,18 +149,11 @@ void lm_render(Engine *s,float *out,int count){
   float sum[2]={0};s->master_smooth+=(s->master-s->master_smooth)*.001f;
   for(int ch=0;ch<NC;ch++){
    float target=s->muted[ch]?0:s->level[ch];s->smooth[ch]+=(target-s->smooth[ch])*.001f;
-   float k=.025f+.6f*s->tone[ch];
-   for(int c=0;c<2;c++){
-    s->filter[ch][c]+=(mix[ch][c]-s->filter[ch][c])*k;
-    int delay=(s->delaypos+SR-(c?22050:16538))%SR;
-    float wet=s->delay[ch][delay*2+c];
-    s->delay[ch][s->delaypos*2+c]=s->filter[ch][c]+wet*.35f;
-    float value=s->filter[ch][c]+wet*(s->echo[ch]+s->room[ch]*.5f);
-    float pan=c?fminf(1,1+s->pan[ch]):fminf(1,1-s->pan[ch]);sum[c]+=value*s->smooth[ch]*pan;
-   }
+   float value[2];float beat=s->current>=0?s->banks[s->current].length/64.0f:SR*60.0f/69;
+   fx_process(&s->fx[ch],ch,beat,mix[ch],value,.025f+.6f*s->tone[ch]);
+   for(int c=0;c<2;c++)sum[c]+=value[c]*s->smooth[ch];
   }
-  s->delaypos=(s->delaypos+1)%SR;
-  if(s->hush>0&&--s->hush==0){memset(s->delay,0,sizeof s->delay);memset(s->filter,0,sizeof s->filter);for(int i=0;i<NV;i++)s->voices[i].live=0;}
+  if(s->hush>0&&--s->hush==0){for(int ch=0;ch<NC;ch++)fx_clear(&s->fx[ch]);for(int i=0;i<NV;i++)s->voices[i].live=0;}
   for(int c=0;c<2;c++){float x=sum[c]*s->master_smooth;float y=x/(1+fabsf(x));out[n*2+c]=y;peak=fmaxf(peak,fabsf(y));}
  }
  /* Retire banks only after all onset-owned voices have finished. */

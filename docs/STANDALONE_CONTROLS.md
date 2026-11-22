@@ -9,8 +9,11 @@
   channel's Auto/Manual. Auto/Manual suppresses automatic notes and leaves the
   common take clock evolving; manually held onsets keep their original source.
 - Mix112: encoders71–76 change six corresponding channel levels. Device110 or
-  Note50: encoders71–75 change selected Level, Tone, Echo, Room and Pan.
-  Encoders76–78 edit chops in Chops/Film Device view (below). Volume79 always changes master.
+  Note50: the full display shows eight selected-channel effects on Sound, Space
+  or Motion. Lower7/8 (CC26/27) move previous/next; each channel remembers its
+  page, initially Sound. Encoders71–78 edit that page. Chops/Film additionally
+  have Cuts: encoders76–78 retain Start/Length/Pad. Volume79 changes master.
+  See [channel effects](CHANNEL_FX.md) for all24parameters, ranges and DSP.
 - Melodic Manual pads36–99: exact Stillwater default centered D Dorian grid,
   right+1scale degree, up+3. All three note channels span MIDI38–86 at octave0;
   the movable triangle plays D/F/A. Root pads use Silt65, natural notes123,
@@ -53,7 +56,7 @@ Live archive audio (standalone-native live sourcing update):
   NEXT16 means a source is waiting for the next64-beat boundary.
 - Select Chops (top5 / CC106), Shift+lower5 to Manual. Populated pads expose consecutive
   cuts covering the complete prepared window; each onset plays the current prepared film PCM immediately.
-  Shift+pad selects a cut silently. In Device/Note view, encoder6 changes Start,
+  Shift+pad selects a cut silently. On the Device/Note Cuts page (lower7/8), encoder6 changes Start,
   encoder7 Length, encoder8 selects among populated cuts. Start/length steps are50ms per tick;
   hold Shift for5ms. Editing is audible on the next pad trigger immediately.
   Edits also enter the next automatic bank; previously sounding voices retain

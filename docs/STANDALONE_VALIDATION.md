@@ -258,3 +258,53 @@ new qualifier initially used exact-zero instead of the existing1e-8 silent-peak
 tolerance; a retry then refused an already retained source-test directory. Both
 were harness issues corrected before the final successful rollout. Checkpoints,
 logs and operational continuation remain private, outside source control.
+
+## Selected channel FX candidate — host review, 2026-11-22
+
+This candidate is implemented and **not deployed**. Live runtime remains
+9ea6e615. See CHANNEL_FX.md for all24controls, algorithms, defaults and ranges.
+
+- `sh scripts/build-native.sh`: pass, strict warnings; host AArch64 memory engine.
+- `ZIG=/verified/zig-0.13.0/zig sh scripts/build-native.sh device`: pass, ELF64
+  x86_64 with maximum GLIBC requirement2.34 (target2.35).
+- `python3 -m unittest discover -s tests -v`:147passed,0failed,6.703s.
+ 22new tests cover every processor/control's actual PCM contribution, channel
+  isolation, native/Python nonfinite/address/bounds admission, generated contract,
+  maximum settings, finite decaying feedback tails, stale-tail bypass/re-enable,
+  Stop/restart silence, smoothing, echo-time crossfade and transport continuity,
+  per-channel/page mappings, Sound-first entry, held releases, Mix and Settings.
+  Existing chop fixtures explicitly select Cuts; ownership checks stay intact.
+- `scripts/rehearse-standalone.py --assets PRIVATE --out PRIVATE`:257passed,
+ 0failed (previous234 plus23additional actual encoder assertions). It retains
+  all100drum source hashes/durations,143instrument assets, coherent programme
+  banks, six Auto/Manual PCM routes, preparation, boundary ownership and Stop.
+- All41source/script Python files parse with Python3.10 grammar.
+- `scripts/benchmark-fx.py --out PRIVATE`:64voices confirmed at warmup, six
+  channels/all FX,2,000blocks each static and rapid full-parameter traffic.
+  Static p99.560ms/max1.138ms; rapid p99.593ms/max3.081ms. Zero blocks exceed
+ 5.805ms (44.1kHz/256). Stop clear.562ms; stopped peak0, voices0, overflow0.
+  This is an ARM host memory benchmark, excluding ALSA/USB and device scheduling.
+
+Viewed40native960x160screenshots: every channel/page at min/max settings,
+including Chops/Film Cuts, plus Mix, Help and Settings. All eight large labels
+and values fit within120pixel encoder columns; longest TRANSIENT/COMPRESS labels,
+18.0kHz/60.0ms/negative pan, page counts, source and long error text remain
+bounded. Device shows only the selected channel, Mix shows six strips. Native
+frames are not physical Push photographs or proof of pad/button feel.
+
+Private `scripts/rehearse-fx.py` captures12seconds per isolated real channel
+(old default/new default/expressive). Six6second WAV comparisons contain2seconds
+of each case at unchanged gains, without export normalization. All captures are
+finite and bounded. Default RMS changes against the previous native engine:
+Drums0.000dB (difference RMS1.30e-9), Bass+.350dB, Lead-.128dB, Mids+.085dB,
+Chops-.055dB, Film-.020dB. Bass now monos its low side; other differences arise
+from genuine independent Room and tempo Echo replacing the shared fixed tap.
+These measurements characterize a deterministic offline source, not arbitrary
+archive speech, human listening or exact original-DSP parity.
+
+Private evidence remains outside git: fx-tests-final.log, fx-benchmark-final.json,
+rehearsal-fx-final/acceptance.json, fx-evidence/metrics.json,40min/max frames,
+three overlays and six short comparison WAVs. No private media or asset catalog
+is committed. Independent review precedes a later paired source/native rollout.
+The existing private delta helper assumes an unchanged binary/file set and needs
+adaptation, followed by the full device acceptance in STANDALONE_INSTALL.md.

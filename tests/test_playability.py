@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'src'))
 from sampler import Sampler,Event,SR
+from channel_fx import defaults
 from standalone import Instrument,pad_pitch
 from composition import chop_gain
 
@@ -16,7 +17,7 @@ class PlayabilityTests(unittest.TestCase):
         self.engine=Sampler(ROOT/'.build/engine.so')
     def tearDown(self):self.engine.close()
     def ui(self):
-        ui=Instrument.__new__(Instrument);ui.engine=self.engine;ui.last_bank=self.engine.status()['bank'];ui.settings=False;ui.shift=False;ui.held={};ui.identity=0;ui.selected=4;ui.manual=[True]*6;ui.octave=0;ui.chop=0;ui.edits={};ui.edit_gains={};ui.mix=False;ui.archive=None;ui.catalog=[];ui.drum_page=0
+        ui=Instrument.__new__(Instrument);ui.fx_pages=[0,0,0,0,3,3];ui.effects=[defaults(ch) for ch in range(6)];ui.engine=self.engine;ui.last_bank=self.engine.status()['bank'];ui.settings=False;ui.shift=False;ui.held={};ui.identity=0;ui.selected=4;ui.manual=[True]*6;ui.octave=0;ui.chop=0;ui.edits={};ui.edit_gains={};ui.mix=False;ui.archive=None;ui.catalog=[];ui.drum_page=0
         return ui
     def event(self,ui,number,kind='cc',value=127):ui.event(dict(kind=kind,number=number,value=value))
     def bank(self,pcm,events=None,**kwargs):
@@ -101,7 +102,7 @@ class PlayabilityTests(unittest.TestCase):
             with patch('standalone.Instruments',return_value=Instruments()),patch('standalone.prepare',return_value=bank),patch.object(Instrument,'request_next'):
                 ui=Instrument(self.engine,t,t)
             try:
-                self.assertEqual(ui.effects[0][1:3],[0,0]);ui.send(1);pcm=self.engine.render(SR)
+                self.assertEqual([ui.effects[0][i] for i in (8,12)],[0,0]);ui.send(1);pcm=self.engine.render(SR)
                 self.assertGreater(max(map(abs,pcm[:2048])),1e-4)
                 self.assertLess(max(map(abs,pcm[SR//2:])),1e-12)
             finally:ui.close()

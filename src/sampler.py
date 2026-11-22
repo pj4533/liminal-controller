@@ -4,6 +4,7 @@ from pathlib import Path
 import array
 import sys
 import wave
+from channel_fx import parameters
 SR=44100
 class Event(C.Structure):
     _fields_=[('frame',C.c_int),('channel',C.c_int),('sample',C.c_int),('gate',C.c_int),('speed',C.c_float),('gain',C.c_float),('attack',C.c_float),('release',C.c_float),('frequency',C.c_float)]
@@ -53,6 +54,9 @@ class Sampler:
         self.bank_owners[slot]=owners;self.banks[slot]=(bank,prepared)
         return slot
     def command(self,op,a=0,b=0,identity=0,event=None):
+        if op==16:
+            if not 0<=a<6 or not 0<=b<24:raise ValueError('FX address')
+            event=Event(gain=parameters(a)[b].clamp(event.gain if event else 0))
         c=Command(op=op,a=a,b=b,id=identity,event=event or Event())
         self.last_admission=self.lib.lm_command(self.ptr,C.byref(c));return self.last_admission==1
     def render(self,frames):

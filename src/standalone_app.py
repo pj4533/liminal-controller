@@ -58,7 +58,7 @@ def main():
                 if midi:
                     for n,v in ui.leds().items():
                         if leds.get(n)!=v and midi.note(n,v):leds[n]=v
-                    buttons={85:127 if status['playing'] else 20,29:20,49:127 if ui.shift else 20,110:20,112:40 if ui.mix else 20,56:20,118:20,62:20,63:20,30:20,81:20}
+                    buttons={85:127 if status['playing'] else 20,29:20,49:127 if ui.shift else 20,110:40 if not ui.mix else 20,26:20 if ui.settings or not ui.mix else 0,27:20 if ui.settings or not ui.mix else 0,112:40 if ui.mix else 20,56:20,118:20,62:20,63:20,30:20,81:20}
                     for ch in range(6):buttons[102+ch]=127 if ch==ui.selected else 30;buttons[20+ch]=0 if ui.muted[ch] else (90 if ui.manual[ch] else 20)
                     for n,v in buttons.items():
                         if controls.get(n)!=v and midi.cc(n,v):controls[n]=v

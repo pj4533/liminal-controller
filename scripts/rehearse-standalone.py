@@ -11,6 +11,7 @@ import tempfile
 import time
 import wave
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'src'))
+from channel_fx import parameters,page_parameters
 from sampler import Sampler,Event,SR
 from standalone import Instrument
 from composition import prepare
@@ -56,8 +57,12 @@ with tempfile.TemporaryDirectory() as home:
         ui.event(dict(kind='cc',number=79,value=1));check('master mapping',abs(ui.master-.46)<1e-6)
         ui.event(dict(kind='cc',number=112,value=127));ui.event(dict(kind='cc',number=72,value=1));check('mix channel mapping',abs(ui.level[1]-.66)<1e-6)
         ui.event(dict(kind='cc',number=110,value=127));ui.selected=2
-        for n in range(72,76):ui.event(dict(kind='cc',number=n,value=1))
-        check('all four effects mapped',ui.effects[2]==[.56,.13,.11,.01])
+        for page in range(3):
+            ui.fx_pages[2]=page
+            for knob,p in enumerate(page_parameters(2,page)):
+                before=ui.effects[2][p.id];ui.event(dict(kind='cc',number=71+knob,value=127))
+                check('FX physical encoder %d/%d'%(page,knob),abs(ui.effects[2][p.id]-p.edit(before,-1))<1e-5)
+        ui.fx_pages[2]=0
         deadline=time.monotonic()+30
         while ui.pending and time.monotonic()<deadline:ui.tick();engine.render(1);time.sleep(.01)
         check('worker prepared next bank',ui.next_slot is not None)

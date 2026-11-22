@@ -3,7 +3,8 @@ from pathlib import Path
 import array
 import json
 import time
-from canvas import Canvas,INK,BRASS,MIST,DARK
+from canvas import Canvas,INK,BRASS,MIST,DARK,FONT
+from channel_fx import pages,page_parameters
 from standalone import NAMES
 class Background:
     def __init__(self,assets,clock=time.monotonic,blender=None):
@@ -31,49 +32,82 @@ class Background:
         a=self.images[index];b=self.images[(index+1)%len(self.images)];weight=(phase-82)/8
         # Bounded native loop releases the GIL; no Python pixel loop delays MIDI.
         return self.blender(a,b,weight) if self.blender else a.tobytes()
+def fit(text,width,scale=1):
+    result='';used=0
+    for ch in str(text).upper():
+        size=(len(FONT[ch][0])+1 if ch in FONT else 4)*scale
+        if used+size>width:break
+        result+=ch;used+=size
+    return result
+
 def render(ui,status,background):
-    c=Canvas(background.frame());bank=ui.current
-    c.rect(0,0,960,26,DARK);c.text(8,7,'LIMINAL',INK,2)
-    c.text(115,9,('PLAYING' if status['playing'] else 'STOPPED')+'  LO-FI  %d BPM'%bank['bpm'],MIST)
-    bar=min(16,1+int(status['position']/max(1,bank['length'])*16));c.text(370,9,'BAR %02d/16'%bar)
-    c.text(480,9,'NEXT READY' if ui.next_slot is not None else ('PREPARING' if ui.pending else 'REPEATING CURRENT'),BRASS)
-    c.text(730,9,'MASTER %d'%round(ui.master*100))
-    for ch,name in enumerate(NAMES):
-        x=ch*120;c.rect(x+3,31,114,51,DARK)
-        c.text(x+8,36,('+' if ui.selected==ch else '')+name,MIST if ui.selected==ch else INK)
-        c.text(x+8,50,'MANUAL' if ui.manual[ch] else 'AUTO',BRASS)
-        c.text(x+8,65,'MUTE' if ui.muted[ch] else '%d%%'%round(ui.level[ch]*100))
-    c.rect(725,31,230,51,DARK);c.text(733,36,'SHIFT + LOWER : AUTO/MANUAL',MIST);c.text(733,50,'LOWER : MUTE  TOP : SELECT');c.text(733,65,'MIX : SIX CHANNEL LEVELS')
-    c.rect(0,89,960,30,DARK)
-    if ui.mix:
-        labels=[name+' '+str(round(ui.level[i]*100)) for i,name in enumerate(NAMES)]+['','']
-    else:
-        ch=ui.selected;fx=ui.effects[ch];labels=['LEVEL '+str(round(ui.level[ch]*100)),'TONE '+str(round(fx[0]*100)),'ECHO '+str(round(fx[1]*100)),'ROOM '+str(round(fx[2]*100)),'PAN '+str(round(fx[3]*100)),'','','']
-    if not ui.mix and ui.selected in (4,5) and bank['cuts']:
-        start,length=ui.cut(bank,min(ui.chop,len(bank['cuts'])-1));labels[5:] = ['START %.2fS'%(start/44100),'LENGTH %.2fS'%(length/44100),'PAD %d/%d'%(min(ui.chop+1,len(bank['cuts'])),len(bank['cuts']))]
-    for i,label in enumerate(labels):c.text(i*120+7,99,label,INK)
-    c.rect(0,126,960,34,DARK)
+    c=Canvas(background.frame());bank=ui.current;ch=ui.selected
     drum=ui.catalog[bank['drum']]['name'].replace('AJ_HALL_DRUM_BREAK_','')
-    c.text(8,130,'TAKE '+drum[:45],BRASS)
-    c.text(370,130,'LEAD '+bank['programs'][0][0][:27],MIST)
     worker=ui.archive_worker
     archive=('IA '+worker.state+(' NEXT16' if worker.credit and worker.credit.get('sha256')!=bank['archive_id'] else '')+' '+(worker.error if worker.error else (str(bank['film_credit'].get('title','')) if isinstance(bank['film_credit'],dict) else 'OFFLINE FALLBACK'))) if worker else ''
-    c.text(8,146,(ui.error or archive or 'REPEAT: NEXT DRUM  ARROWS: OCTAVE/DRUM PAGE  DELETE: RELEASE  STOP: HUSH')[:96])
-    c.text(733,130,'API IMAGE / OFFLINE CACHE')
-    c.text(733,146,'CHOPS/FILM REPEAT: FETCH')
+    c.rect(0,0,960,27,DARK)
+    if ui.mix:
+        c.text(8,7,'LIMINAL / MIX',INK,2)
+        c.text(300,9,'TOP: SELECT  DEVICE/NOTE: CHANNEL EFFECTS',MIST)
+        for i,name in enumerate(NAMES):
+            x=i*120;c.rect(x+3,33,114,86,DARK)
+            c.text(x+8,40,('+' if ch==i else '')+name,MIST if ch==i else INK)
+            c.text(x+8,59,'MANUAL' if ui.manual[i] else 'AUTO',BRASS)
+            c.text(x+8,78,'MUTE' if ui.muted[i] else '%d%%'%round(ui.level[i]*100),INK,2)
+            c.rect(x+8,105,100,3,(34,56,58));c.rect(x+8,105,round(100*ui.level[i]),3,MIST)
+        c.rect(725,33,230,86,DARK)
+        c.text(733,42,'KNOBS 1-6: CHANNEL LEVELS',MIST)
+        c.text(733,62,'LOWER 1-6: MUTE')
+        c.text(733,82,'SHIFT+LOWER: AUTO/MANUAL')
+        c.text(733,103,'VOLUME: MASTER %d%%'%round(ui.master*100))
+    else:
+        page=ui.fx_pages[ch];names=pages(ch)
+        c.text(8,6,NAMES[ch],MIST,2)
+        c.text(156,9,('MANUAL' if ui.manual[ch] else 'AUTO')+(' / MUTE' if ui.muted[ch] else ''),BRASS)
+        c.text(310,9,names[page]+'  %d/%d'%(page+1,len(names)),INK,2)
+        c.text(600,9,'7 PREV / 8 NEXT',MIST)
+        c.text(804,9,'MASTER %d%%'%round(ui.master*100))
+        source=drum if ch==0 else (bank['bass'][0] if ch==1 else bank['programs'][0][0] if ch==2 else bank['pad'][0] if ch==3 else (str(bank['film_credit'].get('title','OFFLINE FILM')) if isinstance(bank['film_credit'],dict) else 'OFFLINE FILM'))
+        c.rect(0,30,960,14,DARK);c.text(8,33,fit('SOURCE: '+source,610),BRASS)
+        c.text(640,33,'TOP/WHEEL: CHANNEL  LOWER 7/8: FX PAGE',MIST)
+        values=[]
+        if page<3:
+            for p in page_parameters(ch,page):
+                value=ui.level[ch] if p.id==0 else ui.effects[ch][p.id]
+                values.append((p.label,p.display(value),(value-p.low)/(p.high-p.low)))
+        else:
+            values=[('CUTS','',0),('SHIFT','FINE',0),('COARSE','50 MS',0),('FINE','5 MS',0),('PAD PLAY','HOLD',0)]
+            if bank['cuts']:
+                index=min(ui.chop,len(bank['cuts'])-1);start,length=ui.cut(bank,index);total=len(bank['pcm'][1])//2
+                values.extend((('START','%.2f S'%(start/44100),start/max(1,total)),('LENGTH','%.2f S'%(length/44100),length/max(1,total)),('PAD','%d/%d'%(index+1,len(bank['cuts'])),(index+1)/len(bank['cuts']))))
+        for i,(label,value,fraction) in enumerate(values):
+            x=i*120;c.rect(x+3,48,114,71,DARK)
+            c.text(x+8,53,fit(label,104,2),BRASS,2)
+            c.text(x+8,74,fit(value,104,2),INK,2)
+            c.rect(x+8,105,100,4,(34,56,58));c.rect(x+8,105,round(100*max(0,min(1,fraction))),4,MIST)
+        c.text(8,122,'KNOBS 1-8: '+names[page]+' / PADS PLAY  SHIFT+LOWER 1-6: AUTO/MANUAL',MIST)
+        c.text(726,122,'LOWER 7 PREV / 8 NEXT',BRASS)
+    c.rect(0,134,960,26,DARK)
+    bar=min(16,1+int(status['position']/max(1,bank['length'])*16))
+    ready='NEXT READY' if ui.next_slot is not None else ('PREPARING' if ui.pending else 'REPEATING CURRENT')
+    c.text(8,137,('PLAYING' if status['playing'] else 'STOPPED')+'  %d BPM  BAR %02d/16  '%(bank['bpm'],bar)+ready,MIST)
+    c.text(600,137,'REPEAT: NEW TAKE/IA  STOP: HUSH',BRASS)
+    c.text(8,150,fit(ui.error or archive or 'ARROWS: OCTAVE/DRUM PAGE  DELETE: RELEASE  MIX: OVERVIEW  HELP: CONTROLS',944))
     if ui.settings:
         c.rect(0,28,960,132,DARK);c.text(12,40,'RECOVERY - SAVE AND STOP FIRST',INK,2)
         c.text(12,65,'LOWER 1 STILLWATER / 2 STOCK / 3 OLD CONTROLLER',MIST)
         c.text(12,90,'TARGET: '+(ui.recovery_target or 'CHOOSE DELIBERATELY').upper(),BRASS,2)
         c.text(12,130,'LOWER 8 CONFIRM / LOWER 7 CANCEL - PRESERVES EXISTING MUSIC')
     elif ui.help:
-        c.rect(0,28,960,132,DARK);c.text(12,38,'LIMINAL / LOCAL LO-FI / NO MAC REQUIRED',INK,2)
-        c.text(12,62,'SHIFT+LOWER AUTO/MANUAL. MELODIC PADS: RIGHT 1 / UP 3 SCALE DEGREES.')
-        c.text(12,79,'CHOPS: LIT PADS IN SOURCE ORDER. SHIFT+PAD SELECT. KNOBS 6 START / 7 LENGTH / 8 PAD. SHIFT: FINE.')
-        c.text(12,96,'CHOPS/FILM REPEAT FETCHES FRESH IA. NEW SOURCE AT 16 BARS. STOP HUSHES. NO TRANSCRIPTION.')
+        c.rect(0,28,960,132,DARK);c.text(12,35,'LIMINAL / CHANNEL EFFECTS',INK,2)
+        c.text(12,57,'DEVICE/NOTE: SELECTED CHANNEL. KNOBS 1-8: SOUND / SPACE / MOTION. LOWER 7/8: PREV/NEXT.',MIST)
+        c.text(12,72,'TOP 1-6 OR WHEEL: CHANNEL. MIX: LEVELS. SHIFT+LOWER 1-6: AUTO/MANUAL. PADS ALWAYS PLAY.')
+        c.text(12,87,'CHOPS/FILM CUTS PAGE: KNOB 6 START / 7 LENGTH / 8 PAD. 50MS STEPS; SHIFT: 5MS.')
+        c.text(12,102,'CHOPS: HOLD LIT PADS IN SOURCE ORDER. SHIFT+PAD: SELECT. FILM: ANCHOR ONE-SHOT.')
+        c.text(12,117,'REPEAT: NEXT DRUM OR FRESH IA. SOURCES PUBLISH AT 16 BARS. STOP: HUSH ALL TAILS.')
         credit=background.credits[0] if background.credits else {}
-        c.text(12,116,'IMAGES: CLEVELAND MUSEUM / CC0 / '+str(credit.get('title','CACHE UNAVAILABLE'))[:60],BRASS)
-        c.text(12,140,'SOURCE CREDITS AND FILE HASHES: LOCAL PRIVATE-ASSETS/*.JSON')
+        c.text(12,132,fit('IMAGES: CLEVELAND / CC0 / '+str(credit.get('title','CACHE UNAVAILABLE')),936),BRASS)
+        c.text(12,147,'SOURCE CREDITS AND HASHES: LOCAL PRIVATE-ASSETS/*.JSON. NO TRANSCRIPTION.')
     return bytes(c.pixels)
 
 

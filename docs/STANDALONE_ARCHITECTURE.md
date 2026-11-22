@@ -42,8 +42,9 @@ unavailable-placeholder mixer channels.
 
 This MVP is **not** exact Swift DSP or seeded MusicRNG parity. It uses portable
 Python deterministic RNG, a reduced bass cell, sampled looping pad rather than
-the full granular PadVoice, simplified guitar ornaments and simple per-channel
-tone, stereo echo, diffuse-room proxy and pan. It omits the full Swift tape,
+the full granular PadVoice, simplified guitar ornaments and the portable per-channel
+[Sound/Space/Motion bus effects](CHANNEL_FX.md). Room now uses independent
+damped comb/allpass diffusion, separate from tempo echo. It omits the full Swift tape,
 master-finisher, virtual-record and spectral-hold chains and bass kick-landmark
 analysis. Soft limiting plus smoothed gains bound output. Taste, pad feel,
 acoustic balance and physical latency require actual device/human acceptance.
@@ -110,3 +111,6 @@ same gains feed Auto sliced PCM and Manual full-source offsets. Edited Manual
 ranges recalculate their gain on the control thread; the per-cut ceiling
 protects louder edits. No
 new audio-thread analysis, allocation or PCM rewrite is introduced.
+
+The full selected-channel Device/Note UI and24parameter bus FX are documented
+in CHANNEL_FX.md. ABI1 now adds command16 while preserving onset/bank ownership.
