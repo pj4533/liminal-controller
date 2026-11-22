@@ -34,7 +34,8 @@ Native successful automatic triggers alone create red pad flashes, bounded by
 120ms/source/gate. Exact cut identity and melodic pitch travel with the native
 event; feedback is isolated by channel and bank revision. Continuous Drum/Film
 playback has no invented pad trigger and does not flash a proxy pad. Manual playing, rejected voices and stale-bank feedback
-cannot invent red triggers. Stop, mute and Manual clear the relevant feedback.
+cannot invent red triggers. Stop, mute and Manual clear the relevant feedback. Pad LED writes poll at50Hz
+independently of the10Hz display so short gates are not skipped between frames.
 
 ## Deliberate platform differences
 

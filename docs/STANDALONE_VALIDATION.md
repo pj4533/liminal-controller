@@ -393,13 +393,15 @@ Host strict native build and verified Zig0.13x86 build passed. The official
 Zig aarch64-linux0.13archive SHA256 was checked against ziglang.org's release
 index:041ac42323837eb5624068acd8b00cd5777dac4cf91179e8dad7a7e90dd0c556.
 Device engine is ELF64x86_64 with maximum GLIBC2.34 (target2.35).
-`python3 -m unittest discover -s tests -v`:163passed,0failed,6.988s.
-Fourteen added tests cover all-channel Auto/manual coexistence, mode-only onset
+`python3 -m unittest discover -s tests -v`:164passed,0failed,7.144s.
+Fifteen added tests cover all-channel Auto/manual coexistence, mode-only onset
 gating, source-owned releases across mode/edit/selection/bank, actual successful
 native automatic feedback, rejected/muted/manual/stale/channel isolation, short
 source/gate/120ms expiry, melodic octave mapping, acoustic vocabulary spread,
 onset trimming, measured/stretched take timing, deterministic arc/feel/gates,
-chronological reorder guard and tiny/empty sources. The former native test that
+chronological reorder guard and tiny/empty sources. A production-loop regression
+verifies a60ms red flash entirely between display frames reaches MIDI and clears;
+pad LEDs poll at50Hz independently of the10Hz display. The former native test that
 accidentally exercised unpublished-bank admission now explicitly tests manual
 onsets accepted in Auto. Continuous Drum/Film playback carries no proxy pad ID.
 

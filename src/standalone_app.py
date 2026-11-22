@@ -28,7 +28,7 @@ def main():
         nonlocal alive
         alive=False
     signal.signal(signal.SIGTERM,stop);signal.signal(signal.SIGINT,stop)
-    engine=Sampler(a.engine or a.home/'engine.so');ui=None;media=None;archive=None;display=midi=None;ready=a.home/'ready.json';frame=None;last=0;leds={};controls={};started=time.monotonic()
+    engine=Sampler(a.engine or a.home/'engine.so');ui=None;media=None;archive=None;display=midi=None;ready=a.home/'ready.json';frame=None;last=0;last_led=0;leds={};controls={};started=time.monotonic()
     try:
         archive=ArchiveWorker(a.home) if not a.simulate else None
         ui=Instrument(engine,a.assets or a.home/'private-assets',a.home,archive);background=Background(a.assets or a.home/'private-assets',blender=engine.blend)
@@ -52,12 +52,16 @@ def main():
                 result=media.poll()
                 if result:background.update(*result)
                 if now-last_media>=90:media.request();last_media=now
+            # Short gated chops can fit entirely between display frames. Poll
+            # native pad feedback independently, without rendering extra images.
+            if midi and now-last_led>=.02:
+                for n,v in ui.leds().items():
+                    if leds.get(n)!=v and midi.note(n,v):leds[n]=v
+                last_led=now
             if now-last>=.1:
                 frame=render(ui,status,background)
                 if display:display.send(frame)
                 if midi:
-                    for n,v in ui.leds().items():
-                        if leds.get(n)!=v and midi.note(n,v):leds[n]=v
                     buttons={85:127 if status['playing'] else 20,29:20,49:127 if ui.shift else 20,110:40 if not ui.mix else 20,26:20 if ui.settings or not ui.mix else 0,27:20 if ui.settings or not ui.mix else 0,112:40 if ui.mix else 20,56:20,118:20,62:20,63:20,30:20,81:20}
                     for ch in range(6):buttons[102+ch]=127 if ch==ui.selected else 30;buttons[20+ch]=0 if ui.muted[ch] else (90 if ui.manual[ch] else 20)
                     for n,v in buttons.items():

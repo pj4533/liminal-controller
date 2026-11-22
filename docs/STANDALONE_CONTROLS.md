@@ -89,7 +89,8 @@ shorter for a shorter gate/source). Manual notes retain their held colour and
 never create automatic red feedback. Chops maps the exact chronological cut;
 melodic channels map the actual MIDI pitch in the current octave, including
 its duplicate positions. Continuous Drum/Film playback has no invented pad trigger and does not flash a proxy pad. Feedback
-is channel/source-revision scoped and clears on Stop, mute or entry to Manual.
+is polled at50Hz independently of the10Hz display, is channel/source-revision
+scoped and clears on Stop, mute or entry to Manual.
 Shift+Drums pads select the catalog silently in both modes; arrows choose the
 catalog page and Repeat requests another take. Full channel FX stay on all eight
 knobs. See DIALOGUE_PORT.md for the source-derived rhythmic chop policy.
