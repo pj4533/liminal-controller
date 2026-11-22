@@ -130,7 +130,10 @@ class Instrument:
                 values=self.instruments.event(ch,midi,0,120,value/127,program,bank['bpm']);values['gate']=SR*120
                 if self.onset(slot,bank['revision'],identity,Event(**values)):self.held[number]=identity
             return
-        if kind!='cc':return
+        # Push controls use channel zero; member-channel CC (notably MPE
+        # CC74) is absolute pad expression, never a relative encoder/button.
+        # Notes and onset-owned releases above remain valid on every channel.
+        if kind!='cc' or e.get('channel',0)!=0:return
         if number==49:self.shift=bool(value);return
         if 71<=number<=79:
             delta=value if value<64 else value-128

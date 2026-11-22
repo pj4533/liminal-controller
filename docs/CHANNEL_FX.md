@@ -9,6 +9,16 @@ audio commands. Pads remain playable on every page and in overlays; releases
 are routed before all view logic. Settings takes priority over page buttons:
 lower7 cancels, lower8 confirms its deliberate recovery target.
 
+Hardware CC controls use MIDI channel1 (zero-based0). Member-channel CC,
+including absolute MPE CC74 pad expression, cannot edit FX, mixer, transport
+or buttons. Pad notes and their releases remain accepted on every channel;
+pressure and pitch bend remain unmapped.
+
+Each channel starts with its existing defaults at application startup. Encoder
+edits persist through notes, velocity/expression, selection, pages, modes,
+Stop/Play and bank/program/source changes until edited again. There is no
+automatic content-boundary reset or saved FX restoration after app restart.
+
 | Page | Encoders1–8 |
 |---|---|
 | Effects (initial) | Level, Low Cut, High Cut, Echo, Echo Time, Feedback, Reverb, Decay |

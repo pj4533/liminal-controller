@@ -1,5 +1,11 @@
 # Standalone controls
 
+Physical CC buttons/encoders use MIDI channel1 (zero-based0); member-channel
+pad expression never edits them. Notes/releases work on every MIDI channel.
+Channel FX start with defaults at app startup, then retain knob edits across
+notes and bank/program/source changes until edited again. App restart restores
+startup defaults; no automatic content reset or new reset gesture is added.
+
 - Play85: toggle the prepared arrangement between playing and stopped. Stop Clips29:
   hush all voices/effect tails and return the take position to zero. Boot starts
   stopped. Manual pads can audition while stopped.

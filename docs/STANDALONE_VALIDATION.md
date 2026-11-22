@@ -622,3 +622,33 @@ verification. No OS/firmware/init/boot change, reboot, listener, Drift update or
 unsolicited sound was issued. Physical hearing, visible pad colours, button
 presses and feel remain human acceptance; later docs-only commits do not change
 the installed runtime identifier.
+
+
+## FX control-channel regression
+
+The physical CC dispatcher previously ignored MIDI channel. Absolute member
+CC74 values64/32 were interpreted as encoder4 relative deltas−64/+32, moving
+Echo30%→0%→32% during pad expression. Existing FX tests dispatched unchannelized
+CC and missed the collision. Only zero-based channel0 now owns physical CC
+controls; all-channel note/release admission and native DSP are unchanged.
+
+`test_fx_midi_routing.py` exercises production fragmented/running-status MIDI,
+all6instrument channels/every FX page and Mix, member channels1–15 with every
+CC74 value, all CC buttons/overlays, and actual channel0 encoder commands.
+Native held releases survive selection/page/mode changes and both wire release
+forms. An actual renderer/native-audio comparison retains30% Echo and identical
+PCM with/without expression through stopped and playing bank/program publication.
+The private real-source qualifier repeats the two-cut GuideDog case without
+fabricated PCM/cuts. Protocol injection is not a captured physical MIDI trace;
+sole-owner physical tap, device ALSA/USB and stopped60second health remain
+separate required deployment gates. Values persist until edited, including
+content changes; startup defaults are not saved FX state across app restart.
+
+Host repair validation: strict host and verified Zig0.13.0 x86 builds passed;
+the x86 native hash remains identical to the deployed engine. Unit suite:
+202passed,0failed. The new display/audio oracle fails against the old dispatcher.
+Private GuideDog revision10 with8real cuts retains30% Echo and byte-identical
+native PCM with member expression before/during/after two different cuts. The
+seven-case real-source gate passed again:40exact intended-range captures with
+natural ends and408unused pads dark/inert. These are host memory-render checks,
+not new device or physical acceptance.

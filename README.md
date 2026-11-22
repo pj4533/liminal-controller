@@ -18,6 +18,8 @@ remain human checks.
 
 On a channel's initial Device/Note **Effects** page, encoder4 is **Echo** and
 encoder7 is **Reverb**; encoder5 sets Echo Time,6 Feedback and8 Decay.
+Knob edits persist across pad playing and bank/program changes. Startup applies
+channel defaults. Member-channel pad expression cannot edit physical CC controls.
 
 Press Play to start or stop. Select a channel with the six top buttons; play pads in either mode; hold Shift and
 press its lower button to disable automatic triggers for that channel. Mix exposes six channel
