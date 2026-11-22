@@ -152,7 +152,10 @@ class Instrument:
                     pcm=self.current['pcm'][1]
                     self.edit_gains[key]=chop_gain(pcm[start*2:(start+length)*2])
                     if self.archive and self.current['archive_id']==self.archive['credit']['sha256']:
-                        self.archive=dict(self.archive,cuts=list(self.current['cuts']),edited=True,semantic=self.current.get('dialogue'));self.archive['cuts'][self.chop]=(start,length);self.archive_dirty=True
+                        # Snapshot every edit for this source/line, including pads
+                        # changed before the queued bank has been published.
+                        cuts=[self.cut(self.current,i) for i in range(count)]
+                        self.archive=dict(self.archive,cuts=cuts,edited=True,semantic=self.current.get('dialogue'));self.archive_dirty=True
                 return
             if self.mix:
                 if knob<6:self.level[knob]=min(1,max(0,self.level[knob]+delta*.01));self.effects[knob][0]=self.level[knob];self.send(4,knob,event=Event(gain=self.level[knob]))

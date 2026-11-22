@@ -126,7 +126,12 @@ def prepare(instruments,assets,catalog,revision,drum_index,bpm=69,seed=1042,line
         arrangement,selected,grid=plan(film,cuts,pcm,bpm,revision,seed,semantic or dict(signature=0,response=0,reorder=False))
         attacks=[]
         for index in selected:
-            start,n=cuts[index];onset,lead,fade=attack(film,start,n)
+            start,n=cuts[index]
+            # Text boundaries and explicit edits already define the playable
+            # range. A second amplitude trim can erase a quiet negation/name.
+            if semantic or (archive and archive.get('edited')):
+                onset,lead,fade=start,0,128
+            else:onset,lead,fade=attack(film,start,n)
             attacks.append((onset,lead,fade,n-(onset-start)))
             banks.append(array.array('f',film[onset*2:(start+n)*2]))
         # Keep fixed local slot10 for Film and15total bank samples.

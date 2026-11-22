@@ -44,6 +44,51 @@ class CoverageTests(unittest.TestCase):
                 self.assertLessEqual(event['gate'],len(bank['pcm'][-event['sample']-1])//2)
                 self.assertIn(event['pad'],range(1,len(cuts)+1))
 
+    def prepared(self,pcm,archive,revision=0,speech=None):
+        class Instruments:
+            entries=[dict(kind='LofiBass',group='test')]
+            def event(self,*args):return dict(frame=0,channel=2,sample=0,gate=10,speed=1,gain=1,attack=1,release=1)
+        with patch('composition.read_pcm',return_value=(pcm,SR)):
+            return prepare(Instruments(),ROOT,[dict(file='test.wav')],revision,0,archive=archive,speech=speech)
+    def test_validated_text_and_edited_ranges_keep_quiet_voiced_prefix(self):
+        quiet=round(.180*SR)
+        pcm=array.array('f',[.015,-.015])*quiet+array.array('f',[.25,-.25])*(SR-quiet)
+        semantic=dict(cuts=[(0,SR)],signature=0,response=0,reorder=False,protected_cuts=[0],line='Do not open')
+        for text,edited in ((None,True),(semantic,True),(semantic,False)):
+            archive=dict(pcm=pcm,cuts=[(0,SR)],edited=edited,semantic=text,credit=dict(sha256='quiet'))
+            bank=self.prepared(pcm,archive,speech=Mock(select=Mock(return_value=text)))
+            self.assertEqual(bank['cuts'],[(0,SR)])
+            for event in (e for e in bank['events'] if e['channel']==4):
+                self.assertEqual(event['gate'],SR)
+                self.assertEqual(bank['pcm'][-event['sample']-1],pcm)
+    def test_multi_pad_edits_accumulate_and_publish_with_owned_release(self):
+        engine=Sampler(ROOT/'.build/engine.so')
+        try:
+            pcm=array.array('f',[.1,-.1])*(SR*3)
+            semantic=dict(cuts=[(0,SR),(SR,SR)],signature=0,response=1,reorder=False,protected_cuts=[0],line='Same line')
+            archive=dict(pcm=pcm,cuts=semantic['cuts'],edited=True,semantic=semantic,credit=dict(sha256='same'))
+            bank=self.prepared(pcm,archive);bank['length']=128;bank['events']=[]
+            engine.install(bank);engine.render(1);ui=self.ui(engine);ui.archive=archive
+            ui.event(dict(kind='cc',number=76,value=1))
+            first=ui.cut(ui.current,0);self.assertEqual(first,(2205,SR))
+            ui.chop=1;ui.event(dict(kind='cc',number=77,value=1))
+            expected=[first,(SR,SR+2205)]
+            self.assertEqual(ui.archive['cuts'],expected)
+            self.assertEqual([ui.cut(ui.current,i) for i in range(2)],expected)
+            ui.event(dict(kind='note',number=slice_note(0),value=100));identity=ui.held[slice_note(0)]
+            prepared=self.prepared(pcm,ui.archive,1);prepared['length']=128
+            self.assertEqual(prepared['cuts'],expected)
+            self.assertEqual(prepared['pcm'][2],pcm[first[0]*2:(first[0]+first[1])*2])
+            prepared['events']=[];engine.install(prepared);ui.archive_dirty=False;ui.archive_worker=None;ui.request_next=Mock()
+            engine.command(1);engine.render(129);ui.tick()
+            self.assertEqual(ui.current['revision'],1)
+            self.assertEqual([ui.cut(ui.current,i) for i in range(2)],expected)
+            self.assertEqual(ui.held[slice_note(0)],identity)
+            ui.selected=0;ui.toggle_mode(4);ui.event(dict(kind='note_off',number=slice_note(0),value=0))
+            engine.render(512);self.assertNotIn(slice_note(0),ui.held)
+            self.assertEqual(engine.status()['voices'],0)
+        finally:engine.close()
+
     def ui(self,engine):
         ui=Instrument.__new__(Instrument);ui.fx_pages=[0,0,0,0,3,3];ui.effects=[defaults(ch) for ch in range(6)];ui.engine=engine;ui.last_bank=engine.status()['bank'];ui.settings=False;ui.shift=False;ui.held={};ui.identity=0;ui.selected=4;ui.manual=[True]*6;ui.chop=0;ui.edits={};ui.edit_gains={};ui.mix=False;ui.archive=None;ui.archive_dirty=False;ui.error='';ui.next_slot=None;ui.pending=None
         return ui

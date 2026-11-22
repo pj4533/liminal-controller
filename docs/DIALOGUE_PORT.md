@@ -62,7 +62,10 @@ Four two-bar hook skeletons and five loop feels drive the16-bar statement,
 groove, build, breakdown and outro. Additional stabs prefer gaps in measured
 drum energy attacks; response skeletons include backbeat steps. Regular stabs
 use1/2/4sixteenth gates with6ms lead and60ms minimum where the source permits.
-Onset analysis retains up to30ms soft lead plus2ms preroll. Quarter steps stay
+Validated text boundaries and explicit edits retain their complete source starts
+in Auto and Manual; a short fade softens the onset without deleting quiet words.
+Only the acoustic startup fallback uses up to30ms soft lead plus2ms preroll.
+Edits to multiple pads accumulate for the same source/line through publication. Quarter steps stay
 fixed; offbeats move consistently up to24ms. Native analysis stays allocation,
 file and inference free; every replacement publishes at64-beat boundaries.
 

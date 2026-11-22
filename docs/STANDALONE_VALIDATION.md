@@ -441,3 +441,18 @@ performance, physical colors/input latency, hearing or human interest/feel.
 The private deployment qualifier must measure fresh (uncached) local base.en DTW
 while real ALSA and display/MIDI continue at master zero, show an actual prepared
 semantic bank and no new xruns. Retain stopped boot and saved rollback gates.
+
+### Review corrections: range preservation and accumulated edits
+
+The quiet-prefix fixture (.015 first180ms, .25 thereafter) reproduces the prior
+7,810-frame Auto trim. Validated text boundaries and explicit edited ranges now
+keep every source sample, with a128-frame fade rather than a second amplitude
+trim. Regression checks exact PCM and44,100-frame gate, including protected
+full-line and edited paths. Multiple pad edits snapshot all source/line edits;
+a native bank transition checks both ranges and original held-release ownership
+across channel/mode changes. Both new regressions failed on the preceding commit.
+
+Strict host and x86 builds passed. Unit suite:183passed,0failed. Fresh private
+library rehearsal:257passed,0failed. Actual device DTW transcript plus matching
+archival PCM replay:52passed across8revisions. New960x160Sound/Cuts/Help renders
+were inspected. This correction makes no hardware verification or listening claim.
